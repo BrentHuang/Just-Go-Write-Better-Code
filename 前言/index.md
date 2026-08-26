@@ -11,3 +11,11 @@
 不仅讲解基本知识点，还结合实际工作讲解工程化中的方法、工具。
 
 ## 目标
+
+## 说明
+
+本书示例代码的开发环境为：Linux Mint 22.3 Zena
+
+go version 为：go1.27.0 linux/amd64
+
+shell 为：/bin/bash
