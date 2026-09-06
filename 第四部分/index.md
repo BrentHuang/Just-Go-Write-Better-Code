@@ -1,11 +1,21 @@
 # 第四部分
 
+## 概览
+
 本部分介绍 Go 语言的流程控制语句，包括 for 循环、goto 跳转、if-else 条件分支和 switch-case 选择结构。Go 的流程控制语法简洁统一——仅保留 for 一种循环结构，条件表达式不加小括号，代码块必须加大括号。掌握这些控制结构是编写可读、可维护 Go 代码的基础。
 
-[for 循环](01for循环.md)
+## 章节导航
 
-[goto 语句](02goto语句.md)
+| 章节 | 核心内容 | 学习目标 |
+| -- | -- | -- |
+| [01 for 循环](01for循环.md) | 三段式循环、“while”与无限循环、break/continue 与标签、Go 1.22 循环变量语义 | 熟练使用唯一的循环结构表达各种迭代需求 |
+| [02 goto 语句](02goto语句.md) | goto 的跳转限制与少见的合法场景 | 理解 goto 的约束，知道何时不应使用它 |
+| [03 if-else 语句](03if-else语句.md) | 条件要求、初始化语句、条件书写原则与常见场景 | 写出表达清晰、分支高效的条件逻辑 |
+| [04 switch-case 语句](04switch-case语句.md) | case 匹配、初始化语句、switch true、fallthrough、可比较类型 | 掌握用 switch 替代冗长 if-else 链的方法 |
 
-[if-else 语句](03if-else语句.md)
+## 学习路径与前置知识
 
-[switch-case 语句](04switch-case语句.md)
+- 学习本部分前，建议先完成第二部分的“变量”与“运算符”及第三部分的布尔类型，流程控制的全部示例都依赖这些基础。
+- 建议按章节顺序学习：for 循环、goto 语句、if-else 语句、switch-case 语句。
+- for 循环的标签与 goto 语句相互关联，建议两节连读；“for 循环”一节同时介绍了 Go 1.22 的循环变量语义变更与整数迭代语法，是掌握现代 Go 写法的要点。
+- switch-case 中 fallthrough 的连续穿透行为需结合示例亲手运行验证；类型选择（type switch）已在文末给出后续章节的交叉引用。

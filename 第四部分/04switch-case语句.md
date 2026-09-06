@@ -147,7 +147,7 @@ func main() {
 
 仅当 case 代码块的结尾使用 fallthrough 关键字时，才会继续执行下一个相邻的 case 或 default 代码块，不管下一个 case 的表达式/值是否与 switch 匹配。
 
-仅能穿透下一个相邻的 case 或 default，不会连续穿透。
+fallthrough 仅能穿透到下一个相邻的 case 或 default，不会连续穿透。如果下一个 case 代码块同样以 fallthrough 结尾，则会继续穿透。也就是说，“穿透一步”的行为可以连续发生，但每一步都必须显式书写 fallthrough。
 
 fallthrough 不能出现在 switch 的最后一个 case 或 default 中（编译报错），因为没有下一个相邻的 case 或 default 可以穿透了。
 
