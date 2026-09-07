@@ -729,7 +729,7 @@ type Group struct {
 
 - [func WithContext(ctx context.Context) (*Group, context.Context)](https://pkg.go.dev/golang.org/x/sync/errgroup#WithContext) 创建带上下文的 Group 实例，返回新创建的 group，该 group 关联一个从 ctx 派生的 Context 实例。当传递给 `g.Go()` 的函数 f 首次返回非 nil 错误，或 `g.Wait()` 首次返回时，ctx 会被取消，以先发生者为准
 - [(g *Group) Go(f func() error)](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.Go) 启动一个协程执行给定的函数 f，f 返回 nil：无错误，返回非 nil：group 记录第一个错误（如果多个协程返回错误，只记录第一个，后续错误被丢弃），并触发 ctx 取消（如果关联的有 ctx），该错误将由 `g.Wait()` 返回。协程必须监听 ctx 取消事件（`select <-ctx.Done()`）实现优雅退出
-- [(g *Group) Wait() error](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.Wait) 阻塞等待所有通过 `g.Go()` 启动的协程执行完毕，返回它们中的第一个非 nil 错误（如果有），无错误返回 nil。特别注意：`g.Wait()` 只会等待 `g.Go()` 启动的协程执行完毕，不会等待在 `g.Go()` 启动的协程执行的 f 函数中启动的协程
+- [(g *Group) Wait() error](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.Wait) 阻塞等待所有通过 `g.Go()` 启动的协程执行完毕，返回它们中的第一个非 nil 错误（如果有），无错误返回 nil。注意：`g.Wait()` 只会等待 `g.Go()` 启动的协程执行完毕，不会等待在 `g.Go()` 启动的协程执行的 f 函数中启动的协程
 - [func (g *Group) SetLimit(n int)](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.SetLimit) 将 group 中的活跃协程数量限制为最多 n 个，默认无限制，负值表示无限制，0 限制将阻止任何新的协程被添加
 
 Group 的零值是有效的，它没有活跃协程数量限制，并且在发生错误时不自动取消（没有 cancel 能力）。基本示例：
@@ -796,7 +796,7 @@ func main() {
  for i := range 5 { // 启动 5 个协程
   eg.Go(func() error {
    slog.Info("任务开始执行", "id", i)
-   done := make(chan error, 1) // 特别注意：这里如果使用无缓冲通道，会导致被取消任务的那个工作协程执行完后往 done 中写结果时阻塞，因为没有人从 done 中读了
+   done := make(chan error, 1) // 注意：这里如果使用无缓冲通道，会导致被取消任务的那个工作协程执行完后往 done 中写结果时阻塞，因为没有人从 done 中读了
 
    // 启动工作协程
    go func() {
