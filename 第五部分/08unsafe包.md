@@ -1,4 +1,4 @@
-### unsafe 包与 uintptr 类型
+# unsafe 包与 uintptr 类型
 
 `unsafe` 包提供了绕过 Go 类型系统安全限制的能力，允许进行底层内存操作。
 
@@ -24,7 +24,7 @@ func main() {
 }
 ```
 
-#### unsafe.Sizeof
+## unsafe.Sizeof
 
 `unsafe.Sizeof` 用于获取变量占用的内存字节大小，这个大小并不包括 x 可能引用的任何内存区域，即对切片等引用类型，unsafe.Sizeof 只计算“引用头”的大小，不包含引用的底层数组大小。函数原型：`func Sizeof(x ArbitraryType) uintptr`，参数可以是任何变量。
 
@@ -59,7 +59,7 @@ func main() {
 }
 ```
 
-#### unsafe.Alignof
+## unsafe.Alignof
 
 `unsafe.Alignof` 用于获取一个类型的值在内存分配时需要满足的地址对齐保证（Address Alignment Guarantee）。地址对齐保证是一个整数，表示变量的内存地址必须是该整数的倍数，这有助于 CPU 高效地访问内存。
 
@@ -118,7 +118,7 @@ func main() {
 - 结构体本身的地址对齐保证：等于其所有字段中最大的那个地址对齐保证。例如，如果一个结构体包含一个 int8（对齐值为 1）和一个 int64（对齐值为 8），那么该结构体整体的地址对齐保证就为 8
 - 结构体大小的计算：结构体的总大小必须是其地址对齐保证的整数倍。编译器可能会在字段之间或结构体末尾添加填充字节以满足此要求
 
-#### unsafe.Offsetof
+## unsafe.Offsetof
 
 `unsafe.Offsetof` 用于获取结构体字段相对于结构体起始地址的字节偏移量。函数原型：`func Offsetof(x ArbitraryType) uintptr`，参数只能是结构体字段。
 
@@ -155,7 +155,7 @@ func main() {
 }
 ```
 
-#### unsafe.Pointer 与 uintptr
+## unsafe.Pointer 与 uintptr
 
 `unsafe.Pointer` 可以转换为任意指针类型，类似于 C 语言中的 `void*` 指针，但必须遵循严格的使用规则。
 
