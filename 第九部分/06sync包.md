@@ -683,7 +683,7 @@ func main() {
  for i := range 5 {
   wg.Go(func(id int) func() {
    return func() {
-    for val := range queue { // for range 循环会在退出前接收完通道中的所有数据
+    for val := range queue { // range 迭代会在退出前接收完通道中的所有数据
      fmt.Printf("协程 %d 消费：%v\n", id, val)
     }
    }
