@@ -236,3 +236,18 @@ func main() {
  fmt.Printf("|%.2s|\n", "你好")    // |你好|
 }
 ```
+
+## 打印数字时加分隔符
+
+需要使用标准库扩展包 golang.org/x/text/message 来实现。
+
+```go
+import (
+ "golang.org/x/text/message"
+)
+
+func main() {
+ p := message.NewPrinter(message.MatchLanguage("en")) // golang.org/x/text/message（标准库扩展）
+ p.Printf("%d\n", 1000*10000)                         // 10,000,000  --按照 locale 规则格式化数字，英语用逗号分隔
+}
+```
