@@ -1,4 +1,4 @@
-# unsafe 包与 uintptr 类型
+# unsafe 包
 
 [unsafe](https://pkg.go.dev/unsafe) 包提供了绕过 Go 类型系统安全限制的能力，允许进行底层内存操作。
 
@@ -24,7 +24,7 @@ func main() {
 }
 ```
 
- `unsafe.Sizeof`、`unsafe.Alignof`、`unsafe.Offsetof` 的返回类型均为 uintptr，表示字节数（类似于 C 语言中的 size_t）
+ `unsafe.Sizeof`、`unsafe.Alignof`、`unsafe.Offsetof` 的返回类型均为 `uintptr`，表示字节数（类似于 C 语言中的 `size_t`）
 
 ## unsafe.Sizeof
 
@@ -157,7 +157,6 @@ func main() {
 
  fmt.Println(unsafe.Sizeof(i)) // 24
  fmt.Println(unsafe.Sizeof(e)) // 16
- // 如果编译器足够智能，可能重排 Inefficient 结构体的字段顺序，其大小也会被自动优化为 16 字节
 
  fmt.Printf("%d %d %d\n", unsafe.Offsetof(i.a), unsafe.Offsetof(i.b), unsafe.Offsetof(i.c)) // 0 8 16
  fmt.Printf("%d %d %d\n", unsafe.Offsetof(e.b), unsafe.Offsetof(e.c), unsafe.Offsetof(e.a)) // 0 8 12
@@ -167,23 +166,92 @@ func main() {
 }
 ```
 
-todo <https://github.com/dominikh/go-tools> 结构体 size 分析工具
+### 结构体字段顺序分析及优化工具
+
+[Staticcheck](https://github.com/dominikh/go-tools) 套件中的 structlayout、structlayout-pretty、structlayout-optimize 小工具可用于展示和优化结构体的内存布局：
+
+- `structlayout` 打印结构体的内存布局，即每个字段的 offset 和 size
+- `structlayout-pretty` 读取 structlayout 的 JSON 格式的输出（`-json`）并展示为 ASCII 图形形式
+- `structlayout-optimize` 读取 structlayout 的 JSON 格式的输出，根据对齐规则给出最优的字段排列顺序，以最大限度减少填充量
+
+安装：
+
+```bash
+go install honnef.co/go/tools/cmd/structlayout@latest
+go install honnef.co/go/tools/cmd/structlayout-pretty@latest
+go install honnef.co/go/tools/cmd/structlayout-optimize@latest
+```
+
+需要把待分析的结构体定义到一个可导出的包里（放在 main 包中不行，因为 main 包不可导出）：
+
+```go
+// layout/layout.go
+package layout
+
+// 优化前
+type Inefficient struct {
+ a bool  // 1 字节 + 7 填充
+ b int64 // 8 字节
+ c int32 // 4 字节 + 4 填充
+} // 总大小：24 字节
+
+// 优化后（按地址对齐保证值从大到小声明结构体字段）
+type Efficient struct {
+ b int64 // 8 字节
+ c int32 // 4 字节
+ a bool  // 1 字节 + 3 填充
+} // 总大小：16 字节
+```
+
+分析：
+
+```bash
+structlayout example.com/hello-world/layout Efficient  # com/hello-world/layout是包的导入路径，Efficient是结构体名
+structlayout -json example.com/hello-world/layout Efficient | structlayout-pretty 
+structlayout example.com/hello-world/layout Inefficient
+structlayout -json example.com/hello-world/layout Inefficient | structlayout-pretty 
+```
+
+查看优化方案：
+
+```bash
+structlayout -json example.com/hello-world/layout Inefficient | structlayout-optimize 
+```
+
+structlayout-optimize 给出的优化结果：
+
+```go
+type Optimize struct {
+ b int64 // 8 字节
+ a bool  // 1 字节 + 3 填充
+ c int32 // 4 字节
+} // 总大小：16 字节
+```
 
 ## unsafe.Pointer
 
-`unsafe.Pointer` 是通用指针类型，可与任意普通指针类型互转，类似于 C 语言中的 `void*` 指针，但必须遵循严格的使用规则。
+`unsafe.Pointer` 是通用指针类型，可与任意普通指针类型互转，类似于 C 语言中的 `void*` 指针，但必须遵循严格的使用规则。Go 规范定义了以下六种合法的转换模式：
 
-`unsafe.Pointer` 可与 uintptr 类型互转。在与操作系统底层交互或通过 CGO 调用 C 语言函数时，一些接口需要直接接收用整数表示的内存地址。此时，uintptr 可以作为中介，将 Go 指针转换为整数形式的地址传递给这些接口。
+1. 任意类型的指针 `*T` 可转换为 `unsafe.Pointer`，`unsafe.Pointer` 可转换回任意类型的指针 `*T2`。前提是 `*T2` 的对齐要求不大于 `*T` 的对齐要求，且转换前后的内存布局兼容
+2. `unsafe.Pointer` 可转换为 `uintptr`，用于打印或调试，但不能将转换后的 `uintptr` 值存储起来延迟使用，因为 `uintptr` 只是整数，GC 不会将其视为指针引用，原对象可能已被回收或移动
+3. 可以在一条表达式中完成 `unsafe.Pointer` -> `uintptr` -> 加减偏移量 -> `unsafe.Pointer` 的完整转换，但算术运算的结果不能超出原分配对象的边界
+4. 调用 `syscall.Syscall` 等系统调用时，可以将 `unsafe.Pointer` 转换为 `uintptr` 直接作为参数传递，编译器会保证在此期间原指针指向的对象不被回收
+5. `reflect.Value.Pointer` 和 `reflect.Value.UnsafeAddr` 返回的 `uintptr` 可立即转换为 `unsafe.Pointer`
+6. `reflect.SliceHeader` 和 `reflect.StringHeader` 的 `Data` 字段可与 `unsafe.Pointer` 互转
 
-## 与 string 和切片相关的函数
+### unsafe.Add
 
-[func String(ptr *byte, len IntegerType) string](https://pkg.go.dev/unsafe#String) 返回一个字符串值，其底层字节序列从 ptr 开始，长度为 len。
+[func Add(ptr Pointer, len IntegerType) Pointer](https://pkg.go.dev/unsafe#Add)（Go 1.17 引入）用于对 `unsafe.Pointer` 进行安全的偏移量加法运算，返回 `ptr + len` 后的新指针。它等价于在一个表达式中完成 `unsafe.Pointer` -> `uintptr` -> 加减偏移量 -> `unsafe.Pointer` 的转换（规则 3），语义明确，且将转换约束在一条表达式内可以保证原指针在运算期间不被 GC 回收。
 
-[func StringData(str string) *byte](https://pkg.go.dev/unsafe#StringData) 返回指向 str 底层字节序列的指针，返回的字节不能被修改。对于空字符串，返回值未指定，可能为 nil。
+## unsafe.String 与 unsafe.Slice 系列函数
 
-[func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType](https://pkg.go.dev/unsafe#Slice) 返回一个切片，其底层数组从 ptr 开始，长度和容量均为 len。
+[func String(ptr *byte, len IntegerType) string](https://pkg.go.dev/unsafe#String)（Go 1.20 引入）返回一个字符串值，其底层字节序列从 ptr 开始，长度为 len。
 
-[func SliceData(slice []ArbitraryType) *ArbitraryType](https://pkg.go.dev/unsafe#SliceData) 返回参数 slice 的 data 指针，即指向底层数组中该切片的首个元素的指针。对 nil 切片返回 nil 指针。
+[func StringData(str string) *byte](https://pkg.go.dev/unsafe#StringData)（Go 1.20 引入）返回指向 str 底层字节序列的指针，返回的字节不能被修改。对于空字符串，返回值未指定，可能为 nil。
+
+[func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType](https://pkg.go.dev/unsafe#Slice)（Go 1.17 引入）返回一个切片，其底层数组从 ptr 开始，长度和容量均为 len。
+
+[func SliceData(slice []ArbitraryType) *ArbitraryType](https://pkg.go.dev/unsafe#SliceData)（Go 1.20 引入）返回参数 slice 的 `data` 指针，即指向底层数组中该切片的首个元素的指针。对 nil 切片返回 nil 指针。
 
 在 `string` 与 `[]byte` 类型互转时，如果要避免内存分配和拷贝，可以使用这几个函数。
 
