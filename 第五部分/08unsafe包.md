@@ -8,7 +8,7 @@
 ```go
 func main() {
  // Sizeof 返回类型占用的字节数（编译时计算）
- fmt.Println(unsafe.Sizeof(int(0))) // 8（在 64 位操作系统上）
+ fmt.Println(unsafe.Sizeof(int(0))) // 8
  fmt.Println(unsafe.Sizeof(false))  // 1
 
  // Alignof 返回对齐要求

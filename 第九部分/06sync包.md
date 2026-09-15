@@ -921,11 +921,11 @@ func main() {
  // 小任务，占用权重 1
  for i := range 6 {
   wg.Add(1)
-  go func(idx int) {
+  go func(index int) {
    defer wg.Done()
    _ = sem.Acquire(ctx, 1)
    defer sem.Release(1)
-   fmt.Printf("小任务 %d 运行\n", idx)
+   fmt.Printf("小任务 %d 运行\n", index)
   }(i)
  }
 
