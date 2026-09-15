@@ -8,7 +8,7 @@
 ```go
 func main() {
  // Sizeof 返回类型占用的字节数（编译时计算）
- fmt.Println(unsafe.Sizeof(int(0))) // 8（在 64 位操作系统上）
+ fmt.Println(unsafe.Sizeof(int(0))) // 8
  fmt.Println(unsafe.Sizeof(false))  // 1
 
  // Alignof 返回对齐要求
@@ -60,13 +60,13 @@ func main() {
  fmt.Println(unsafe.Sizeof(p)) // 8
 
  var s1 []int = nil
- fmt.Println(unsafe.Sizeof(s1)) // 24  --切片的“引用头“包含 data 指针、len、cap 三个字段
+ fmt.Println(unsafe.Sizeof(s1)) // 24  --切片的“引用头”包含 data 指针、len、cap 三个字段
 
  s2 := []int{1, 2, 3}
  fmt.Println(unsafe.Sizeof(s2)) // 24
 
  var m map[string]int = nil
- fmt.Println(unsafe.Sizeof(m)) // 8  --映射的”引用头“是一个指针类型
+ fmt.Println(unsafe.Sizeof(m)) // 8  --映射的“引用头”是一个指针类型
 
  m1 := map[string]int{"a": 1, "b": 2}
  fmt.Println(unsafe.Sizeof(m1)) // 8

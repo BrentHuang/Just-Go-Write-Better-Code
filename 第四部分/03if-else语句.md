@@ -4,11 +4,11 @@
 
 ```go
 // autocorrect-disable
-if 条件表达式1 {
+if 条件表达式1 { // 这个大括号不能换行
  // 条件1 为 true 时执行
-} else if 条件表达式2 {
+} else if 条件表达式2 { // 这个大括号不能换行
  // 条件2 为 true 时执行
-} else {
+} else { // 这个大括号不能换行
  // 其它情况执行
 }
 // autocorrect-enable
