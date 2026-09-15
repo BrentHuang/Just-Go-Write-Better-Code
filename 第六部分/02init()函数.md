@@ -1,6 +1,6 @@
 # init() 函数
 
-`init()` 函数可在 `package` 声明之后定义，常用于注册驱动、初始化只读配置等无参数、无返回值的初始化任务。
+`init()` 是用于包初始化的特殊函数，常用于注册驱动、初始化只读配置等无参数、无返回值的初始化任务。
 
 ```go
 func init() {
@@ -15,10 +15,10 @@ func init() {
 
 ## 初始化顺序
 
-每个源文件中可定义多个 `init()` 函数，Go 规范明确定义了 `init()` 函数的执行顺序：
+每个源文件中可定义多个 `init()` 函数，Go 规范定义了 `init()` 函数的执行顺序：
 
 - 跨包：按 import 依赖关系，被依赖的包先初始化
-- 包内：按源文件名名字典序执行
+- 包内：按源文件名字典序执行
 - 文件内：多个 `init()` 函数按声明顺序执行
 
 完整的初始化顺序：
@@ -140,10 +140,17 @@ func init() {
 
 ### 注册功能（如注册数据库驱动）
 
+通过空白导入（`import _ "package-path"`）触发目标包的 `init()` 执行，是 `init()` 函数最经典的使用场景。
+
 ```go
-// database/drivers/mysql.go
+// 在 main.go 或任意需要数据库连接的源文件中，导入驱动包即可触发其 init() 执行
+import _ "github.com/go-sql-driver/mysql"
+
+// database/drivers/mysql.go  --驱动包内部
+import "database/sql"
+
 func init() {
- database.Register("mysql", &MySQLDriver{})
+ sql.Register("mysql", &MySQLDriver{})
 }
 ```
 
