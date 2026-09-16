@@ -1,4 +1,4 @@
-## panic-recover 机制
+# panic-recover 机制
 
 函数原型：
 
@@ -65,7 +65,7 @@ func main() {
 }
 ```
 
-### panic 的传播与覆盖
+## panic 的传播与覆盖
 
 多层函数调用的 defer-recover 链：
 
@@ -168,7 +168,7 @@ func main() {
 // main recover: outer panic
 ```
 
-### Goroutine 之间的 panic-recover
+## Goroutine 之间的 panic-recover
 
 不同 Goroutine 之间是独立执行的，一个 Goroutine 的 `recover()` 无法捕获另一个 Goroutine 的 panic。
 
@@ -222,7 +222,7 @@ func main() {
 }
 ```
 
-### 注意事项
+## 注意事项
 
 在实际开发中应当限制直接调用 `panic()`，panic-recover 机制不是错误处理策略。
 
