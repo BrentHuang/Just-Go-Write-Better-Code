@@ -26,13 +26,65 @@ func main() {
 被 defer 的函数体在当前函数的执行流程结束前被调用，包括两种情形：
 
 - 正常流程：进入当前函数 -> 执行代码 -> 遇到 return -> 计算返回值并赋值给临时变量（位于栈、寄存器或逃逸到堆上）或命名返回值变量 -> 按 LIFO 执行当前函数的 defer 列表 -> 当前函数返回（临时变量或命名返回值）
-- 发生 panic 时流程：进入当前函数 -> 执行代码 -> 发生 panic -> 中断当前函数的执行 -> 按 LIFO 执行当前函数的 defer 列表 -> 如果某个被 defer 的函数体中有 `recover()`，当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码），调用当前函数的上层函数从调用点之后继续执行；否则，当前函数执行完 defer 列表后，继续将 panic 传播给它的调用者 -> 如果传播到 `main()` 仍没有 `recover()` 则程序崩溃
+- 发生 panic 时流程：进入当前函数 -> 执行代码 -> 发生 panic -> 中断当前函数的执行 -> 按 LIFO 执行当前函数的 defer 列表 -> 如果某个被 defer 的函数体中有 `recover()`，当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码，返回非命名返回值类型的零值或命名返回值的值），调用当前函数的上层函数从调用点之后继续执行；否则，当前函数执行完 defer 列表后，继续将 panic 向上传播给它的调用者 -> 如果传播到当前协程的调用栈顶仍没有 `recover()` 则整个程序崩溃
 
 Go 中 return 语句并非原子操作，它大致分为三步：
 
 - 设置需要返回的值：对于非命名返回值，赋值给临时变量；对于命名返回值，赋值给命名返回值变量
 - 按 LIFO 执行当前函数中所有被 defer 的函数体
 - 当前函数返回临时变量或命名返回值变量
+
+panic 被 recover 后会跳过 return 语句，直接返回非命名返回值类型的零值或命名返回值的值。
+
+非命名返回值：
+
+```go
+func f() int {
+ defer func() {
+  if r := recover(); r != nil {
+   fmt.Printf("recovered from panic, err: %v\n", r) // recovered from panic, err: f
+  }
+ }()
+
+ r := 0
+ panic("f")
+ return r
+}
+
+func g() {
+ r := f()       // f() 中的 panic 跳过了 return 语句，函数的返回值就是 int 的零值
+ fmt.Println(r) // 0
+}
+
+func main() {
+ g()
+}
+```
+
+命名返回值：
+
+```go
+func f() (r int) {
+ defer func() {
+  if r := recover(); r != nil {
+   fmt.Printf("recovered from panic, err: %v\n", r) // recovered from panic, err: f
+  }
+ }()
+
+ r = 1
+ panic("f")
+ return r
+}
+
+func g() {
+ r := f()       // f() 中的 panic 跳过了 return 语句，函数的返回值就是命名返回值的值
+ fmt.Println(r) // 1
+}
+
+func main() {
+ g()
+}
+```
 
 ## defer 闭包对函数返回值的影响
 
@@ -95,7 +147,7 @@ func main() {
 
 ```go
 // 非命名返回值，且不是指针、引用类型，无法在 defer 闭包中修改
-func anonymousReturn() int {
+func unnamedReturn() int {
  var result int
  defer func() {
   result++                                       // 修改的是外部变量 result，而非函数最终的返回值
@@ -107,7 +159,7 @@ func anonymousReturn() int {
 }
 
 func main() {
- fmt.Printf("匿名返回值函数结果：%d\n", anonymousReturn()) // 10
+ fmt.Printf("非命名返回值函数结果：%d\n", unnamedReturn()) // 10
 }
 ```
 

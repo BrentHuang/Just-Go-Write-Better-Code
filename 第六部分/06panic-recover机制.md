@@ -1,22 +1,20 @@
 # panic-recover 机制
 
-函数原型：
+数组访问越界、空指针解引用等运行时错误会引发 panic。但不是所有的 panic 都来自运行时，直接调用内置函数 [func panic(v any)](https://pkg.go.dev/builtin#panic) 也会引发 panic，`panic()` 函数接受任何值作为参数。
 
 ```go
-func panic(v any)
-func recover() any
+func main() {
+ s := []int{1, 2, 3}
+ s[3] = 1 // 索引 3 超出范围，会引发 panic
+
+ var p *int
+ fmt.Println(*p) // 对 nil 指针解引用，会引发 panic
+}
 ```
 
-`recover()` 的返回值就是传给 `panic()` 的参数。如果没有发生 panic，`recover()` 返回 nil。
+内置函数 [func recover() any](https://pkg.go.dev/builtin#recover) 的作用是捕获 panic，恢复协程的执行。`recover()` 的返回值就是传给 `panic()` 的参数。如果没有发生 panic，`recover()` 返回 nil。注意：`recover()` 仅在被 defer 的函数体中有效，如果 `recover()` 不在被 defer 的函数体中，则不会捕获任何 panic。
 
-数组访问越界、空指针引用等运行时错误会引发 panic。但不是所有的 panic 都来自运行时，直接调用内置的 `panic()` 函数也会引发 panic，`panic()` 函数接受任何值作为参数。
-
-`recover()` 的作用是捕获 panic，恢复程序的执行。其特点包括：
-
-- `recover()` 仅在被 defer 的函数体中有效，如果 `recover()` 不在被 defer 的函数体中，则不会捕获任何 panic
-- 发生 panic 后，会立即中断当前函数的执行，按 LIFO 执行当前函数的 defer 列表。如果某个被 defer 的函数体中有 `recover()`，当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码），调用当前函数的上层函数会从调用点之后继续执行；否则，当前函数执行完 defer 列表后，继续将 panic 向上传播给它的调用者，如果传播到 `main()` 仍没有 `recover()` 则程序崩溃
-- 对于发生 panic 的函数，panic 发生点之后的代码不会继续执行，控制权会返回到它的调用方。如果函数 A 中发生的 panic 向上传播给它的调用者 B，B 的某个 defer 中的 `recover()` 捕获了这个 panic，B 中位于 `A()` 调用之后的代码也不会继续执行，因为调用 `A()` 的地方就是 panic 发生点
-- 发生 panic P 后，如果执行的 defer 函数 f 内部又触发了新的 panic Q，那么新的 panic Q 会替代先前的 panic P，成为当前正在传播的 panic。应当在函数 f 内部增加 defer 函数调用来 recover 这个新的 panic Q，而不是让 panic Q 覆盖 panic P
+发生 panic 后，会立即中断当前函数的执行，按 LIFO 执行当前函数的 defer 列表。如果某个被 defer 的函数体中有 `recover()`，当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码，返回非命名返回值类型的零值或命名返回值的值），调用当前函数的上层函数会从调用点之后继续执行；否则，当前函数执行完 defer 列表后，继续将 panic 向上传播给它的调用者，如果传播到当前协程的调用栈顶仍没有 `recover()` 则整个程序崩溃。
 
 基本示例：
 
@@ -27,25 +25,26 @@ func main() {
  }()
 
  defer func() {
+  fmt.Println("2")
   if r := recover(); r != nil {
-   fmt.Printf("Recovered from panic, err: %v\n", r) // 输出：Recovered: something went wrong
+   fmt.Printf("recovered from panic, err: %v\n", r) // recovered from panic, err: something went wrong
   }
  }()
 
  defer func() {
-  fmt.Println("2")
+  fmt.Println("3")
  }()
 
- fmt.Println("Start")
+ fmt.Println("start")
  panic("something went wrong")           // 传递给 panic() 的值是 "something went wrong"，recover() 将返回这个值
- fmt.Println("This will not be printed") // panic 发生点之后的代码不会执行，main() 函数能正常返回
+ fmt.Println("this will not be printed") // 这一行不会执行，panic 发生点之后的代码不会执行
 }
 
-// 输出：
-// Start
+// start
+// 3
 // 2
-// Recovered: something went wrong
-// 1 // 这里输出 1 的原因：会执行完 defer 列表，执行完 defer 列表后再返回
+// recovered from panic, err: something went wrong
+// 1
 ```
 
 `recover()` 仅在被 defer 的函数体中有效，不在被 defer 的函数体中则不会捕获任何 panic：
@@ -53,24 +52,25 @@ func main() {
 ```go
 func f() {
  if r := recover(); r != nil { // 无效！不会捕获任何 panic
-  fmt.Printf("Recovered from panic, err: %v\n", r)
+  fmt.Printf("recovered from panic, err: %v\n", r)
  }
  panic("test")
 }
 
 func main() {
  fmt.Println(1) // 1
- f()            // f() 中发生 panic，且 f 的 defer 列表中没有 recover(),main() 无 defer 列表，程序崩溃
+ f()            // f() 中发生 panic，且 f() 的 defer 列表中没有 recover()，main() 也无 defer 列表，整个程序崩溃
  fmt.Println(2)
 }
 ```
 
+注意：某些致命错误会导致 Go 运行时终止程序，如栈溢出、内存耗尽等，这些是 fatal error 而非普通 panic，recover 也捕获不到，程序必然崩溃。
+
 ## panic 的传播与覆盖
 
-多层函数调用的 defer-recover 链：
+对于发生 panic 的函数，panic 发生点之后的代码不会继续执行，控制权会返回到它的调用方。如果函数 f() 中发生的 panic 向上传播给它的调用者 g()，g() 的某个 defer 中的 `recover()` 捕获了这个 panic，g() 中位于 `f()` 调用之后的代码也不会继续执行，因为在 g() 看来，调用 `f()` 的地方就是 panic 发生点。
 
 ```go
-
 func a() {
  defer fmt.Println("defer in a") // a() 的 defer 列表中没有 recover()，所以执行完 defer 列表后，a() 调用返回，panic 会继续向上传播给 main()
  fmt.Println("in a")
@@ -86,9 +86,9 @@ func b() {
 }
 
 func main() {
- defer func() { // main() 的 defer 列表中有 recover()，所以执行完 defer 列表后，main() 调用返回，panic 恢复，程序不会崩溃。如果 main() 的 defer 列表中没有 recover()，程序就会崩溃
+ defer func() { // main() 的 defer 列表中有 recover()，所以执行完 defer 列表后，main() 函数返回，程序不会崩溃。如果 main() 的 defer 列表中没有 recover()，程序就会崩溃
   if r := recover(); r != nil { // recover() 的返回值就是传给 panic() 的参数
-   fmt.Printf("Recovered from panic in main, err: %v\n", r)
+   fmt.Printf("recovered from panic in main, err: %v\n", r)
   }
  }()
 
@@ -96,60 +96,28 @@ func main() {
  fmt.Println("after a") // 不会执行
 }
 
-// 输出：
 // in a
 // in b
 // defer in b
 // defer in a
-// Recovered in main: panic in b
+// recovered in main: panic in b
 ```
 
-注意：某些致命错误会导致 Go 运行时终止程序，如内存不足，这些情况是无法恢复的。
-
-以下程序最终崩溃的原因是外层的 `panic("outer panic")` 没有被本层函数以及上层函数的任何 `recover()` 捕获。虽然内层的 panic 被成功恢复，但这并不影响外层 panic 向上传播。
+发生 panic P1 后，如果执行的 defer 函数 `f()` 内部又触发了新的 panic P2，那么新的 panic P2 会替代先前的 panic P1，成为当前正在传播的 panic。应当在函数 `f()` 内部增加 defer 函数调用来 recover 掉这个新的 panic P2，而不是让 panic P2 覆盖 panic P1。
 
 ```go
 func main() {
  defer func() {
-  defer func() {
-   if r := recover(); r != nil {
-    fmt.Printf("inner recovered from panic, err: %v\n", r) // 第 5 步
-   }
-  }()
-  fmt.Println("inner panic") // 第 3 步
-  panic("inner panic")       // 第 4 步
- }()
- fmt.Println("outer panic") // 第 1 步
- panic("outer panic")       // 第 2 步
-}
-
-// 输出：
-// outer panic
-// inner panic
-// inner recover err inner panic
-// panic: outer panic
-
-// goroutine 1 [running]:
-// main.main()
-//         /home/hardy/workspace/test/go/hello2/main.go:16 +0x78
-// exit status 2
-```
-
-defer 应只做清理、可预测的操作，尽量不要在被 defer 的函数体中触发新的 panic。如果被 defer 的函数体中有可能 panic，应当在这个被 defer 的函数体中增加 defer 函数调用 `recover()` 这个新的 panic，否则它将替代先前的 panic，成为当前正在传播的 panic。
-
-```go
-func main() {
- defer func() {
-  if r := recover(); r != nil { // 多次 panic，recover 捕获的时最后一次 panic 的值
-   fmt.Printf("main recover: %v\n", r)
+  if r := recover(); r != nil { // 多次 panic，recover 捕获的是最后一次 panic 的值
+   fmt.Printf("1 recovered from panic, err: %v\n", r)
   }
  }()
 
  defer func() {
-  // 如果注释掉下面这段 defer 代码，最终打印的就是 main recover: inner panic，可以看到“inner panic”覆盖了“outer panic”，成为当前正在传播的 panic
+  // 如果注释掉下面这段 defer 代码，最终打印的就是“1 recovered from panic, err: inner panic”，可以看到“inner panic”覆盖了“outer panic”，成为当前正在传播的 panic
   defer func() {
-   if r := recover(); r != nil { // recover() 捕获了新产生的“inner panic”，防止它覆盖“outter panic”
-    fmt.Printf("inner recover: %v\n", r) // 第 5 步
+   if r := recover(); r != nil { // recover() 捕获了新产生的“inner panic”，防止它覆盖“outer panic”
+    fmt.Printf("2 recovered from panic, err: %v\n", r) // 第 5 步
    }
   }()
 
@@ -161,64 +129,118 @@ func main() {
  panic("outer panic")       // 第 2 步
 }
 
-// 输出：
 // outer panic
 // inner panic
-// inner recover: inner panic
-// main recover: outer panic
+// 2 recovered from panic, err: inner panic
+// 1 recovered from panic, err: outer panic
 ```
 
-## Goroutine 之间的 panic-recover
+以下程序最终崩溃的原因是外层的 `panic("outer panic")` 没有被其所在函数以及上层函数的任何 `recover()` 捕获。虽然内层的 panic 被成功恢复，但这并不影响外层 panic 向上传播。
 
-不同 Goroutine 之间是独立执行的，一个 Goroutine 的 `recover()` 无法捕获另一个 Goroutine 的 panic。
+```go
+func main() {
+ defer func() {
+  defer func() {
+   if r := recover(); r != nil {
+    fmt.Printf("recovered from panic, err: %v\n", r) // 第 5 步
+   }
+  }()
+  fmt.Println("inner panic") // 第 3 步
+  panic("inner panic")       // 第 4 步
+ }()
+ fmt.Println("outer panic") // 第 1 步
+ panic("outer panic")       // 第 2 步
+}
 
-如果一个 Goroutine 发生 panic 且未被捕获，会导致整个程序崩溃，而不仅仅是这个 Goroutine 退出。因此，Goroutine 内部必须捕获 panic 防止整个进程崩溃。
+// outer panic
+// inner panic
+// recovered from panic, err: inner panic
+// panic: outer panic
 
-示例 1：在 Goroutine 内部的 `recover()` 可以捕获其中的 panic，程序不会崩溃：
+// goroutine 1 [running]:
+// main.main()
+//         /home/hardy/workspace/test/go/hello-world/main.go:16 +0x78
+// exit status 2
+```
+
+被 defer 的函数体应保持简单，只做资源清理、状态还原等不会 panic 的操作，避免在其中触发新的 panic。
+
+## 协程之间的 panic-recover
+
+不同协程之间是独立执行的，一个协程的 `recover()` 无法捕获另一个协程的 panic。
+
+如果一个协程发生 panic 且未被捕获，会导致整个程序崩溃，而不仅仅是这个协程退出，这是 Go 的设计哲学。因此，协程内部必须捕获 panic 以防止整个程序崩溃。
+
+示例 1：在协程内部的 `recover()` 可以捕获其中的 panic，程序不会崩溃：
 
 ```go
 func main() {
  var wg sync.WaitGroup
 
  wg.Go(func() {
-  // 在 Goroutine 内部 recover()，程序不会崩溃
+  // 在协程内部 recover()，程序不会崩溃
   defer func() {
    if r := recover(); r != nil {
-    fmt.Printf("recovered: %v\n", r)
+    fmt.Printf("recovered from panic, err: %v\n", r)
    }
   }()
 
-  panic("Goroutine 出错")
+  panic("协程 panic")
  })
 
  wg.Wait()
  fmt.Printf("main() continued\n")
 }
 
-// 输出：
-// recovered: Goroutine 出错
+// recovered from panic, err: 协程 panic
 // main() continued
 ```
 
-示例 2：在 main Goroutine 中的 `recover()` 无法捕获子 Goroutine 中的 panic，程序会崩溃：
+示例 2：在 main 协程中的 `recover()` 无法捕获其它协程中的 panic，程序会崩溃：
 
 ```go
 func main() {
  var wg sync.WaitGroup
 
  defer func() {
-  // 这个 recover() 只能捕获 main Goroutine 的 panic
-  // 无法捕获下面启动的子 Goroutine 的 panic
+  // 这个 recover() 只能捕获 main 协程中的 panic
+  // 无法捕获下面启动的协程中的 panic
   if r := recover(); r != nil {
-   fmt.Printf("recovered: %v", r)
+   fmt.Printf("recovered from panic, err: %v\n", r)
   }
  }()
 
  wg.Go(func() {
-  panic("Goroutine 出错") // 这个 panic 不会被上面的 recover() 捕获，因为是不同的 Goroutine
+  panic("协程 panic") // 这个 panic 不会被上面的 recover() 捕获，因为是不同的协程
  })
 
  wg.Wait()
+}
+```
+
+## safeCall
+
+在要执行的函数外包一层 `safeCall`，捕获函数中可能的 panic，避免程序崩溃：
+
+```go
+func safeCall(fn func()) {
+ defer func() {
+  if r := recover(); r != nil {
+   fmt.Printf("recovered from panic, err: %v\n", r)
+   // 可以在这里进行错误上报等操作
+  }
+ }()
+ fn()
+}
+
+func main() {
+ safeCall(func() { // 函数可能 panic，在外面包装一层，捕获 panic 并恢复执行
+  fmt.Println("start")
+  panic("test panic")
+  fmt.Println("this line will not be executed") // 就算 recover 了，也不会执行到这一行，但匿名函数调用能正常返回
+ })
+ // 后续代码会继续执行
+ fmt.Println("program continues")
 }
 ```
 
