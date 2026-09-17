@@ -88,7 +88,7 @@ func b() {
 func main() {
  defer func() { // main() 的 defer 列表中有 recover()，所以执行完 defer 列表后，main() 函数返回，程序不会崩溃。如果 main() 的 defer 列表中没有 recover()，程序就会崩溃
   if r := recover(); r != nil { // recover() 的返回值就是传给 panic() 的参数
-   fmt.Printf("recovered from panic in main, err: %v\n", r)
+   fmt.Printf("recovered from panic, err: %v\n", r)
   }
  }()
 
@@ -100,7 +100,7 @@ func main() {
 // in b
 // defer in b
 // defer in a
-// recovered in main: panic in b
+// recovered from panic, err: panic in b
 ```
 
 发生 panic P1 后，如果执行的 defer 函数 `f()` 内部又触发了新的 panic P2，那么新的 panic P2 会替代先前的 panic P1，成为当前正在传播的 panic。应当在函数 `f()` 内部增加 defer 函数调用来 recover 掉这个新的 panic P2，而不是让 panic P2 覆盖 panic P1。
@@ -218,7 +218,7 @@ func main() {
 }
 ```
 
-## safeCall
+## `safeCall`
 
 在要执行的函数外包一层 `safeCall`，捕获函数中可能的 panic，避免程序崩溃：
 
