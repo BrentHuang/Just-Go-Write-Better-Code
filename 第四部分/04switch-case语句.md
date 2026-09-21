@@ -3,7 +3,7 @@
 switch 语句从上到下检查 case，执行第一个与 switch 匹配的 case 代码块。语法：
 
 ```go
-switch 表达式/值 { // 这个大括号不能换行
+switch 表达式/值 { // 这个 { 不能换行
 case 表达式1/值1:
     // 代码块，不需要加大括号
 case 表达式2/值2, 表达式3/值3: // 逗号分隔，或的关系
@@ -114,6 +114,8 @@ func main() {
 }
 ```
 
+注意：这里用 `os` 作为变量名会遮蔽标准库的 `os` 包名。在本 switch-case 块内，`os` 指的是字符串变量而非 `os` 包；由于示例不需要使用 `os` 包，因此没有冲突，但实际项目中禁止这样做，以免造成混淆。
+
 ## switch true
 
 当 switch 后不跟任何表达式/值时（等同于 `switch true`），每个 case 条件都应该是布尔表达式。这种语法可以用来替代冗长的 `if-else if` 链，让代码更清晰。
@@ -126,19 +128,19 @@ func main() {
  // 这个 switch 等价于下面的 if-else if
  switch {
  case h < 12:  // if h < 12
-  println("Good morning")
+  fmt.Println("Good morning")
  case h < 18:  // else if h < 18
-  println("Good afternoon")
+  fmt.Println("Good afternoon")
  default:  // else
-  println("Good evening")
+  fmt.Println("Good evening")
  }
 
  if h < 12 {
-  println("Good morning")
+  fmt.Println("Good morning")
  } else if h < 18 {
-  println("Good afternoon")
+  fmt.Println("Good afternoon")
  } else {
-  println("Good evening")
+  fmt.Println("Good evening")
  }
 }
 ```
@@ -171,7 +173,7 @@ func main() {
 
 fallthrough 不能用在类型选择（type switch）中，因为 type switch 按具体类型匹配，一个值只会命中其中一个 case，穿透到下一个 case 没有意义。类型选择的详细用法将在后续章节介绍。
 
-## 其他可比较类型
+## 其它可比较类型
 
 除整型外，switch 可以处理各种可比较的类型，字符串是最常见的非整数应用场景之一。
 
@@ -188,13 +190,14 @@ func main() {
   fmt.Println("unknown")
  }
 
- // 浮点数，但需注意精度问题：浮点数使用 == 比较可能因精度误差导致意外结果，实际项目中应避免直接比较浮点数
+ // 浮点数也可参与 switch（本质是 == 比较）。本例中 ratio 与 case 值都是字面量 3.14，二者精确相等、可正常匹配；
+ // 但浮点运算会引入精度误差，实际项目中应避免直接比较浮点数
  ratio := 3.14
  switch ratio {
  case 3.14:
   fmt.Println("约等于 π")
- case 1.41:
-  fmt.Println("约等于 √2")
- }
+  case 1.41:
+   fmt.Println("约等于 √2")
+  }
 }
 ```

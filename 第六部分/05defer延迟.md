@@ -6,6 +6,8 @@ defer 用于延迟执行函数调用，通常用于资源清理、锁释放、�
 defer 函数名(参数1, 参数2)
 ```
 
+上方为语法示意，函数名与参数需替换为实际代码。
+
 defer 的核心语义是“延迟执行”，即在当前函数的执行流程结束前，按逆序（LIFO，后进先出）执行当前函数中所有被 defer 的函数体。注意：被 defer 的函数调用，其参数会立即求值固定下来（而不是在延迟执行函数体时才计算参数），但函数体的执行会推迟到返回值求值之后、当前函数返回之前执行。
 
 ```go
@@ -20,19 +22,75 @@ func main() {
  a++
 }
 
-// 输出：2 3 2
+// 2
+// 3
+// 2
 ```
 
 被 defer 的函数体在当前函数的执行流程结束前被调用，包括两种情形：
 
 - 正常流程：进入当前函数 -> 执行代码 -> 遇到 return -> 计算返回值并赋值给临时变量（位于栈、寄存器或逃逸到堆上）或命名返回值变量 -> 按 LIFO 执行当前函数的 defer 列表 -> 当前函数返回（临时变量或命名返回值）
-- 发生 panic 时流程：进入当前函数 -> 执行代码 -> 发生 panic -> 中断当前函数的执行 -> 按 LIFO 执行当前函数的 defer 列表 -> 如果某个被 defer 的函数体中有 `recover()`，当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码），调用当前函数的上层函数从调用点之后继续执行；否则，当前函数执行完 defer 列表后，继续将 panic 传播给它的调用者 -> 如果传播到 `main()` 仍没有 `recover()` 则程序崩溃
+- 发生 panic 时流程：进入当前函数 -> 执行代码 -> 发生 panic -> 中断当前函数的执行 -> 按 LIFO 执行当前函数的 defer 列表
+  - 如果某个被 defer 的函数体中有 `recover()`：当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码，返回非命名返回值类型的零值或命名返回值的值），调用当前函数的上层函数从调用点之后继续执行
+  - 否则：当前函数执行完 defer 列表后，继续将 panic 向上传播给它的调用者；如果传播到当前协程的调用栈顶仍没有 `recover()`，则整个程序崩溃
 
 Go 中 return 语句并非原子操作，它大致分为三步：
 
 - 设置需要返回的值：对于非命名返回值，赋值给临时变量；对于命名返回值，赋值给命名返回值变量
 - 按 LIFO 执行当前函数中所有被 defer 的函数体
 - 当前函数返回临时变量或命名返回值变量
+
+panic 被 recover 后会跳过 return 语句，直接返回非命名返回值类型的零值或命名返回值的值。
+
+非命名返回值：
+
+```go
+func f() int {
+ defer func() {
+  if r := recover(); r != nil {
+   fmt.Printf("recovered from panic, err: %v\n", r) // recovered from panic, err: f
+  }
+ }()
+
+ r := 0
+ panic("f")
+ return r
+}
+
+func g() {
+ r := f()       // f() 中的 panic 跳过了 return 语句，函数的返回值就是 int 的零值
+ fmt.Println(r) // 0
+}
+
+func main() {
+ g()
+}
+```
+
+命名返回值：
+
+```go
+func f() (r int) {
+ defer func() {
+  if r := recover(); r != nil {
+   fmt.Printf("recovered from panic, err: %v\n", r) // recovered from panic, err: f
+  }
+ }()
+
+ r = 1
+ panic("f")
+ return r
+}
+
+func g() {
+ r := f()       // f() 中的 panic 跳过了 return 语句，函数的返回值就是命名返回值的值
+ fmt.Println(r) // 1
+}
+
+func main() {
+ g()
+}
+```
 
 ## defer 闭包对函数返回值的影响
 
@@ -95,7 +153,7 @@ func main() {
 
 ```go
 // 非命名返回值，且不是指针、引用类型，无法在 defer 闭包中修改
-func anonymousReturn() int {
+func unnamedReturn() int {
  var result int
  defer func() {
   result++                                       // 修改的是外部变量 result，而非函数最终的返回值
@@ -107,7 +165,7 @@ func anonymousReturn() int {
 }
 
 func main() {
- fmt.Printf("匿名返回值函数结果：%d\n", anonymousReturn()) // 10
+ fmt.Printf("非命名返回值函数结果：%d\n", unnamedReturn()) // 10
 }
 ```
 
@@ -115,13 +173,13 @@ func main() {
 
 ## defer 性能开销
 
-defer 的性能开销取决于编译器优化是否触发了开放编码（open-coded）机制（Go 1.14 引入）。如果满足开放编码条件，defer 的性能开销接近普通函数调用（在 Go 1.27.1 上基准测试约 2ns/op），可以放心使用；如果未触发开放编码，则涉及运行时的栈操作和函数调用，在 Go 1.13 之前可能需要约 50ns 的开销。
+defer 的性能开销取决于编译器优化是否触发了开放编码（open-coded）机制（Go 1.14 引入）。满足开放编码条件时，defer 的开销接近普通函数调用；未触发开放编码时，defer 会退化为运行时的栈分配与函数调用路径，在 Go 1.13 之前开销约为 50 ns。
 
 Go 在不同版本中对 defer 的性能进行了优化：
 
 - Go 1.13 之前：`_defer` 结构体主要在堆上分配，这可能会带来一些性能开销
 - Go 1.13：引入了在栈上分配 `_defer` 结构体的能力，减少了内存分配开销，性能提升了约 30%
-- Go 1.14：进一步引入了开放编码（open-coded）的 defer。在满足特定条件（如 defer 数量不超过 8 个、没有 goto 等导致控制流不稳定的语句等）时，defer 调用会被编译器直接展开到函数末尾，避免了创建 `_defer` 结构体，性能接近普通函数调用
+- Go 1.14：进一步引入了开放编码（open-coded）的 defer。在满足特定条件时（如单个函数中 defer 数量不超过 8 个、defer 未出现在循环体内、编译时已开启优化等），defer 调用会被编译器直接展开到函数末尾，避免了创建 `_defer` 结构体，性能接近普通函数调用
 
 ```go
 func example() {
@@ -141,7 +199,7 @@ func example() {
 }
 ```
 
-defer 的性能一直在提升，可以放心使用，使用 defer 提升可读性是值得的。
+defer 经过多轮优化，多数场景下其开销已接近普通函数调用。直接用 defer 组织资源清理、解锁等收尾逻辑，能明显提升函数内收尾代码的集中度，是值得优先选择的写法。
 
 对于高频调用的函数（如每秒百万次），也可以考虑手动管理资源，例如在 `if err != nil` 分支提前释放资源，避免 defer 的额外开销。
 
@@ -164,7 +222,7 @@ func updateData() {
 
 ### 清理临时状态
 
-例如恢复全局变量、还原标志位、重置缓存等，确保函数执行后环境不受污染。
+例如恢复包级变量、还原标志位、重置缓存等，确保函数执行后环境不受污染。
 
 ```go
 var loggingEnabled bool
@@ -205,6 +263,43 @@ func trace(msg string) func() {
 func main() {
  bigSlowOperation()
 }
+```
+
+## defer 对方法值的求值时机 todo
+
+`defer f.Close()` 这类写法在 defer 语句处求值的对象是方法值 `f.Close`，接收者 `f` 在此刻被固定。若方法使用值接收者，则接收者在 defer 语句处被复制，方法体执行时读到的是复制时刻的字段值；若方法使用指针接收者，固定下来的是指针本身，方法体执行时读到的是该变量的最新值。
+
+```go
+type Reporter struct {
+ name string
+ n    int
+}
+
+func (r Reporter) Report() { // 值接收者：defer 语句处复制接收者
+ fmt.Println(r.name, r.n)
+}
+
+type Counter struct {
+ n int
+}
+
+func (c *Counter) Report() { // 指针接收者：defer 语句处固定指针
+ fmt.Println(c.n)
+}
+
+func main() {
+ r := Reporter{name: "defer 处的值", n: 1}
+ defer r.Report()            // 值接收者，输出：defer 处的值 1
+ r = Reporter{name: "return 前的值", n: 2}
+
+ c := &Counter{n: 1}
+ defer c.Report()            // 指针接收者，输出：2
+ c.n++
+}
+
+// 输出：
+// 2
+// defer 处的值 1
 ```
 
 ## defer 中的错误处理
@@ -332,11 +427,11 @@ func main() {
 
 ## 在循环中使用 defer 的陷阱
 
-因为被 defer 的函数体是在当前函数 return 之前才执行，在循环中使用 defer 要小心，可能导致资源释放不及时而被耗尽。
+因为被 defer 的函数体是在当前函数 return 之前才执行，在循环中使用 defer 要小心，可能导致资源释放不及时而被耗尽。下面的示例展示了不好的做法和推荐的做法：
 
 ```go
-// 不好的做法
-func foo() error {
+// 不好的做法：在循环中使用 defer，文件不会逐个关闭
+func openFilesBad() error {
  paths := [...]string{
   "/home/guang/test1.txt",
   "/home/guang/test2.txt",
@@ -356,8 +451,8 @@ func foo() error {
  return nil
 }
 
-// 好的做法：在循环中使用匿名函数包一层或提取成普通函数 ProcessFile（推荐）
-func bar() error {
+// 好的做法：在循环中使用匿名函数包一层或提取成普通函数 ProcessFile
+func openFilesGood() error {
  paths := [...]string{
   "/home/guang/test1.txt",
   "/home/guang/test2.txt",
@@ -407,3 +502,52 @@ func main() {
 ```
 
 应仅在 `main()` 函数体中根据实际需要调用 `os.Exit()`，在其它函数体中不应该调用 `os.Exit()`。
+
+## runtime.Goexit() 对 recover 的影响
+
+[func Goexit()](https://pkg.go.dev/runtime#Goexit) 的主要用途是让当前协程“体面地”提前退出，同时确保 defer 中的清理逻辑被执行，但 defer 中的 `recover()` 返回 nil，因为 Goexit 不是 panic。
+
+当 `main()` 函数返回时，整个程序就结束了。如果在 `main()` 函数中启动了一个后台协程，但 `main()` 自己没什么事可做了，直接 return 会立刻杀掉后台协程。一种常见的做法是在 `main()` 中调用 `runtime.Goexit()`，这样 `main` 协程会终止，但 `main()` 函数不返回，不会触发程序退出，程序会继续运行其它协程。
+
+```go
+func main() {
+ go func() {
+  // 一个持续运行的后台任务
+  for i := 0; ; i++ {
+   fmt.Println(i)
+   time.Sleep(time.Second)
+  }
+ }()
+ runtime.Goexit() // main 协程退出，但后台协程继续运行
+}
+```
+
+在函数中途强制结束当前协程，但确保所有 defer 语句被执行。这跟 return 的区别在于，return 只能从当前函数返回，而 Goexit() 会直接终止整个协程，但依然会执行调用栈上所有被 defer 的函数体。
+
+```go
+var shouldStop = true
+
+func worker() {
+ defer func() {
+  fmt.Println("清理资源")
+  if r := recover(); r != nil {
+   fmt.Printf("recovered from panic, err:%v\n", r)
+  } else { // true
+   fmt.Println("no panic")
+  }
+ }()
+
+ for {
+  if shouldStop {
+   runtime.Goexit() // 立刻终止这个协程，但会先执行 defer
+  }
+ }
+ fmt.Println("这行永远不会被执行")
+}
+
+func main() {
+ var wg sync.WaitGroup
+ wg.Go(worker)
+ wg.Wait()
+}
+```
