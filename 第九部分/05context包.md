@@ -164,7 +164,7 @@ func FetchFirstSuccessful(ctx context.Context, urls []string) ([]byte, error) {
     default: // Channel 已满   -> 跳过（丢弃结果）
     }
    }
-   // 其他状态码视为失败，忽略
+   // 其它状态码视为失败，忽略
   }(url)
  }
 
@@ -212,7 +212,7 @@ func main() {
 
 代码分析：
 
-1. 三个任务并发执行，需要起三个 Goroutine，Goroutine 执行成功则将结果写入 resultCh 中。因 resultCh 只有一个缓冲位，所以只能写入一个结果，其他成功结果会被丢弃
+1. 三个任务并发执行，需要起三个 Goroutine，Goroutine 执行成功则将结果写入 resultCh 中。因 resultCh 只有一个缓冲位，所以只能写入一个结果，其它成功结果会被丢弃
 2. Main Goroutine 中需要等待从 resultCh 读取成功结果
 3. 如果三个任务均失败，resultCh 中就不会有数据可读，Main Goroutine 就永久阻塞，需要处理这种情况。Main Goroutine 不能直接 wg.Wait 三个任务 Goroutine 都结束，因为 wg.Wait 是阻塞的，所以需要另起一个 Goroutine 等待三个任务 Goroutine 都结束，并发出 done 信号通知 Main Goroutine（done 本质上是一个适配器，把 WaitGroup 的阻塞等待适配成 select 可用的 Channel 操作。这是一个常见的 Go 惯用模式）
 4. 三个任务 Goroutine 和 Main Goroutine 都需要响应 cancel 信号，即监听 `ctx.Done()` 通道是否关闭。三个任务 Goroutine 中使用 NewRequestWithContext API 已经实现了取消功能，不需要额外处理

@@ -1,6 +1,6 @@
 # iota 常量
 
-iota 是一个预定义的常量，用于简化枚举和相关常量的定义，只能用在常量分组声明中。
+iota 是 Go 的预定义标识符（见“关键字与预定义标识符”一章），在常量声明中表示从 0 开始的连续无类型整数常量，用于简化枚举和相关常量的定义。
 
 ```go
 const iota = 0 // Untyped int.
@@ -17,7 +17,7 @@ const iota = 0 // Untyped int.
 | -- | -- | -- | -- |
 | 基础递增 | const (<br> A = iota<br> B<br> C<br> ) | `A=0, B=1, C=2` | 最基本的自动递增，从 0 开始的行索引 |
 | iota 表达式 | const (<br> A = iota * 2<br> B<br> C<br> ) | `A=0, B=2, C=4` | B、C 继承 `iota * 2` 表达式 |
-| 跳过值 | const (<br> A = iota<br> _<br> B<br> ) | `A=0, B=2` | 使用空白标识符 `_` 跳过特定值，iota 计数不会因插入其它值而中断 |
+| 跳过值 | const (<br> A = iota<br> _<br> B<br> ) | `A=0, B=2` | 使用空白标识符 `_` 占位并忽略该值，该行仍消耗一次 iota 计数，递增不中断 |
 | 从 1 开始 | const (<br> _ = iota<br> Red<br> Green<br> ) | `Red=1, Green=2` | 跳过 0，从 1 开始计数 |
 | 中间插入显式值 | const (<br> A = iota<br> B = 100<br> C = iota<br> D<br> ) | `A=0, B=100, C=2, D=3` | iota 计数不会因插入其它值而中断 |
 | 一行多个常量 | const (<br> A, B = iota, iota+1<br> C, D<br> ) | `A=0, B=1, C=1, D=2` | 同一行 iota 值相同，后续行中的多个常量分别继承对应的表达式 |
@@ -47,6 +47,8 @@ Go 没有枚举类型，定义整型枚举的标准步骤是：
 1. 声明一个自定义类型
 2. 分组声明使用 iota 的一组常量
 
+> 提示：下文通过 `String()` 方法实现 `fmt.Stringer` 接口，方法与接口将在第七部分详细讲解，此处只需理解其作用是让枚举值以字符串形式输出。
+
 ```go
 // 1. 自定义类型
 type Weekday int
@@ -74,6 +76,8 @@ func main() {
 ```
 
 字符串类型的枚举：
+
+由于 iota 是无类型整型常量，字符串枚举无法使用 iota，需要为每个常量逐一显式赋值。
 
 ```go
 // 1. 自定义类型
@@ -155,7 +159,7 @@ func (p Permissions) String() string {
  if p.Has(FlagShare) {
   flags = append(flags, "SHARE")
  }
- return fmt.Sprint(flags)
+ return strings.Join(flags, "|")
 }
 
 func main() {

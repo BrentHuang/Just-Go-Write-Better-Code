@@ -1,6 +1,6 @@
 # panic-recover 机制
 
-数组访问越界、空指针解引用等运行时错误会引发 panic。但不是所有的 panic 都来自运行时，直接调用内置函数 [func panic(v any)](https://pkg.go.dev/builtin#panic) 也会引发 panic，`panic()` 函数接受任何值作为参数。
+数组访问越界、空指针解引用等运行时错误会引发 panic。但不是所有的 panic 都来自运行时，直接调用内置函数 [func panic(v any)](https://pkg.go.dev/builtin#panic) 也会引发 panic，`panic()` 函数接受任何值作为参数。下面的示例中，第一处 `s[3] = 1` 引发的越界 panic 会立即终止程序，因此第二处空指针解引用并不会被执行；两个场景需分开运行才能分别观察。
 
 ```go
 func main() {
@@ -14,7 +14,7 @@ func main() {
 
 内置函数 [func recover() any](https://pkg.go.dev/builtin#recover) 的作用是捕获 panic，恢复协程的执行。`recover()` 的返回值就是传给 `panic()` 的参数。如果没有发生 panic，`recover()` 返回 nil。注意：`recover()` 仅在被 defer 的函数体中有效，如果 `recover()` 不在被 defer 的函数体中，则不会捕获任何 panic。
 
-发生 panic 后，会立即中断当前函数的执行，按 LIFO 执行当前函数的 defer 列表。如果某个被 defer 的函数体中有 `recover()`，当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码，返回非命名返回值类型的零值或命名返回值的值），调用当前函数的上层函数会从调用点之后继续执行；否则，当前函数执行完 defer 列表后，继续将 panic 向上传播给它的调用者，如果传播到当前协程的调用栈顶仍没有 `recover()` 则整个程序崩溃。
+发生 panic 后，会立即中断当前函数的执行，按 LIFO 执行当前函数的 defer 列表。如果某个被 defer 的函数体中有 `recover()`，当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码，返回未命名返回值的零值或命名返回值的当前值），调用当前函数的上层函数会从调用点之后继续执行；否则，当前函数执行完 defer 列表后，继续将 panic 向上传播给它的调用者，如果传播到当前协程的调用栈顶仍没有 `recover()` 则整个程序崩溃。
 
 基本示例：
 
@@ -64,11 +64,11 @@ func main() {
 }
 ```
 
-注意：某些致命错误会导致 Go 运行时终止程序，如栈溢出、内存耗尽等，这些是 fatal error 而非普通 panic，recover 也捕获不到，程序必然崩溃。
+注意：某些致命错误会导致 Go 运行时终止程序，如栈溢出、内存耗尽等，这些是 fatal error 而非普通 panic，`recover()` 也捕获不到，程序必然崩溃。
 
 ## panic 的传播与覆盖
 
-对于发生 panic 的函数，panic 发生点之后的代码不会继续执行，控制权会返回到它的调用方。如果函数 f() 中发生的 panic 向上传播给它的调用者 g()，g() 的某个 defer 中的 `recover()` 捕获了这个 panic，g() 中位于 `f()` 调用之后的代码也不会继续执行，因为在 g() 看来，调用 `f()` 的地方就是 panic 发生点。
+对于发生 `panic` 的函数，`panic` 发生点之后的代码不会继续执行，控制权会返回到它的调用方。如果函数 `f()` 中发生的 `panic` 向上传播给它的调用者 `g()`，`g()` 的某个 `defer` 中的 `recover()` 捕获了这个 `panic`，`g()` 中位于 `f()` 调用之后的代码也不会继续执行，因为在 `g()` 看来，调用 `f()` 的地方就是 `panic` 发生点。
 
 ```go
 func a() {
@@ -103,7 +103,7 @@ func main() {
 // recovered from panic, err: panic in b
 ```
 
-发生 panic P1 后，如果执行的 defer 函数 `f()` 内部又触发了新的 panic P2，那么新的 panic P2 会替代先前的 panic P1，成为当前正在传播的 panic。应当在函数 `f()` 内部增加 defer 函数调用来 recover 掉这个新的 panic P2，而不是让 panic P2 覆盖 panic P1。
+发生 `panic` P1 后，如果执行的 `defer` 函数 `f()` 内部又触发了新的 `panic` P2，那么新的 `panic` P2 会替代先前的 `panic` P1，成为当前正在传播的 `panic`。应当在函数 `f()` 内部增加 `defer` 函数调用来 recover 这个新的 `panic` P2，而不是让 `panic` P2 覆盖 `panic` P1。
 
 ```go
 func main() {
@@ -135,7 +135,7 @@ func main() {
 // 1 recovered from panic, err: outer panic
 ```
 
-以下程序最终崩溃的原因是外层的 `panic("outer panic")` 没有被其所在函数以及上层函数的任何 `recover()` 捕获。虽然内层的 panic 被成功恢复，但这并不影响外层 panic 向上传播。
+以下程序最终崩溃的原因是外层的 `panic("outer panic")` 没有被其所在函数以及上层函数的任何 `recover()` 捕获。虽然内层的 `panic` 被成功恢复，但这并不影响外层 `panic` 向上传播。
 
 ```go
 func main() {
@@ -163,13 +163,13 @@ func main() {
 // exit status 2
 ```
 
-被 defer 的函数体应保持简单，只做资源清理、状态还原等不会 panic 的操作，避免在其中触发新的 panic。
+被 `defer` 的函数体应保持简单，只做资源清理、状态还原等不会 `panic` 的操作，避免在其中触发新的 `panic`。
 
 ## 协程之间的 panic-recover
 
-不同协程之间是独立执行的，一个协程的 `recover()` 无法捕获另一个协程的 panic。
+不同协程之间是独立执行的，一个协程的 `recover()` 无法捕获另一个协程的 `panic`。
 
-如果一个协程发生 panic 且未被捕获，会导致整个程序崩溃，而不仅仅是这个协程退出，这是 Go 的设计哲学。因此，协程内部必须捕获 panic 以防止整个程序崩溃。
+如果一个协程发生 `panic` 且未被捕获，会导致整个程序崩溃，而不仅仅是这个协程退出，这是 Go 运行时对未捕获 `panic` 的处理方式。因此，协程内部必须捕获 `panic` 以防止整个程序崩溃。
 
 示例 1：在协程内部的 `recover()` 可以捕获其中的 panic，程序不会崩溃：
 
@@ -196,7 +196,7 @@ func main() {
 // main() continued
 ```
 
-示例 2：在 main 协程中的 `recover()` 无法捕获其它协程中的 panic，程序会崩溃：
+示例 2：在 `main` 协程中的 `recover()` 无法捕获其它协程中的 `panic`，程序会崩溃：
 
 ```go
 func main() {
@@ -227,6 +227,7 @@ func safeCall(fn func()) {
  defer func() {
   if r := recover(); r != nil {
    fmt.Printf("recovered from panic, err: %v\n", r)
+   fmt.Println(string(debug.Stack())) // 打印 panic 时的栈信息
    // 可以在这里进行错误上报等操作
   }
  }()
@@ -246,8 +247,8 @@ func main() {
 
 ## 注意事项
 
-在实际开发中应当限制直接调用 `panic()`，panic-recover 机制不是错误处理策略。
+在实际项目中应限制直接调用 `panic()`，panic-recover 机制不是错误处理策略。
 
 - 仅在真正不可恢复的错误场景才使用 `panic()`
-- 在库/框架中避免调用 `panic()`，返回 error 更常见
+- 在库/框架中避免调用 `panic()`，返回 `error` 更常见
 - 即使在测试代码中，也优先使用 `t.Fatal()` 或者 `t.FailNow()` 而不是 `panic()`

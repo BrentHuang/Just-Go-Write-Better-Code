@@ -206,7 +206,7 @@ type Efficient struct {
 分析：
 
 ```bash
-structlayout example.com/hello-world/layout Efficient  # com/hello-world/layout是包的导入路径，Efficient是结构体名
+structlayout example.com/hello-world/layout Efficient  # example.com/hello-world/layout 是包的导入路径，Efficient 是结构体名
 structlayout -json example.com/hello-world/layout Efficient | structlayout-pretty 
 structlayout example.com/hello-world/layout Inefficient
 structlayout -json example.com/hello-world/layout Inefficient | structlayout-pretty 
@@ -232,12 +232,14 @@ type Optimize struct {
 
 `unsafe.Pointer` 是通用指针类型，可与任意普通指针类型互转，类似于 C 语言中的 `void*` 指针，但必须遵循严格的使用规则。Go 规范定义了以下六种合法的转换模式：
 
-1. 任意类型的指针 `*T` 可转换为 `unsafe.Pointer`，`unsafe.Pointer` 可转换回任意类型的指针 `*T2`。前提是 `*T2` 的对齐要求不大于 `*T` 的对齐要求，且转换前后的内存布局兼容
+1. 任意类型的指针 `*T1` 可转换为 `unsafe.Pointer`，`unsafe.Pointer` 可转换回任意类型的指针 `*T2`。前提是 `T2` 的大小不大于 `T1`，且二者具有等价的内存布局
 2. `unsafe.Pointer` 可转换为 `uintptr`，用于打印或调试，但不能将转换后的 `uintptr` 值存储起来延迟使用，因为 `uintptr` 只是整数，GC 不会将其视为指针引用，原对象可能已被回收或移动
 3. 可以在一条表达式中完成 `unsafe.Pointer` -> `uintptr` -> 加减偏移量 -> `unsafe.Pointer` 的完整转换，但算术运算的结果不能超出原分配对象的边界
 4. 调用 `syscall.Syscall` 等系统调用时，可以将 `unsafe.Pointer` 转换为 `uintptr` 直接作为参数传递，编译器会保证在此期间原指针指向的对象不被回收
 5. `reflect.Value.Pointer` 和 `reflect.Value.UnsafeAddr` 返回的 `uintptr` 可立即转换为 `unsafe.Pointer`
-6. `reflect.SliceHeader` 和 `reflect.StringHeader` 的 `Data` 字段可与 `unsafe.Pointer` 互转
+6. `reflect.SliceHeader` 和 `reflect.StringHeader` 的 `Data` 字段可与 `unsafe.Pointer` 互转（注意：这两个类型自 Go 1.20 起已废弃，推荐使用 `unsafe.Slice`/`unsafe.SliceData` 或 `unsafe.String`/`unsafe.StringData`）
+
+`unsafe.Pointer` 转换本质上是重新解释同一块内存。
 
 ### unsafe.Add
 
