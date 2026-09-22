@@ -265,43 +265,6 @@ func main() {
 }
 ```
 
-## defer 对方法值的求值时机 todo
-
-`defer f.Close()` 这类写法在 defer 语句处求值的对象是方法值 `f.Close`，接收者 `f` 在此刻被固定。若方法使用值接收者，则接收者在 defer 语句处被复制，方法体执行时读到的是复制时刻的字段值；若方法使用指针接收者，固定下来的是指针本身，方法体执行时读到的是该变量的最新值。
-
-```go
-type Reporter struct {
- name string
- n    int
-}
-
-func (r Reporter) Report() { // 值接收者：defer 语句处复制接收者
- fmt.Println(r.name, r.n)
-}
-
-type Counter struct {
- n int
-}
-
-func (c *Counter) Report() { // 指针接收者：defer 语句处固定指针
- fmt.Println(c.n)
-}
-
-func main() {
- r := Reporter{name: "defer 处的值", n: 1}
- defer r.Report()            // 值接收者，输出：defer 处的值 1
- r = Reporter{name: "return 前的值", n: 2}
-
- c := &Counter{n: 1}
- defer c.Report()            // 指针接收者，输出：2
- c.n++
-}
-
-// 输出：
-// 2
-// defer 处的值 1
-```
-
 ## defer 中的错误处理
 
 defer 中的错误容易被忽略，可以在 defer 函数体中记录错误日志或使用命名返回值向外层传递 defer 中的错误信息。
