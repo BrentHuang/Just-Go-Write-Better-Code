@@ -28,7 +28,7 @@ func main() {
 
 ## unsafe.Sizeof
 
-[func Sizeof(x ArbitraryType) uintptr](https://pkg.go.dev/unsafe#Sizeof) 用于获取变量占用的内存字节大小，这个大小并不包括变量 `x` 可能引用的任何内存区域，即对切片、映射等引用类型，`unsafe.Sizeof` 只计算“引用头”的大小，不包含引用的底层数据大小。参数可以是任何变量。
+[func Sizeof(x ArbitraryType) uintptr](https://pkg.go.dev/unsafe#Sizeof) 用于获取变量占用的内存字节大小，这个大小并不包括变量 `x` 可能引用的任何内存区域，即对切片、映射、函数、通道这些引用类型，`unsafe.Sizeof` 只计算“引用头”的大小，不包含引用的底层数据大小。参数可以是任何变量。
 
 ```go
 func main() {
@@ -85,7 +85,7 @@ func main() {
 | int16、uint16 | 2 |
 | int32、uint32、float32、rune、complex64 | 4，complex64 的整体地址对齐保证与其组成部分 float32 一致 |
 | int、int64、uint64、float64、complex128 | 8，complex128 的整体地址对齐保证为 8 字节，其实部和虚部各为一个 float64，已自然满足对齐 |
-| string、指针、切片、映射、通道、函数、接口 | 8，这些类型的宽度为一个“机器字”，在 64 位系统上为 8 字节 |
+| string、指针、切片、映射、函数、接口、通道 | 8，这些类型的宽度为一个“机器字”，在 64 位系统上为 8 字节 |
 | 数组 | 与其元素类型的地址对齐保证相同，例如，`[3]int8` 的地址对齐保证是 1，`[2]int64` 的地址对齐保证是 8 |
 
 ```go
