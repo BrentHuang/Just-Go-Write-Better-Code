@@ -31,8 +31,8 @@ func main() {
 
 - 正常流程：进入当前函数 -> 执行代码 -> 遇到 return -> 计算返回值并赋值给临时变量（位于栈、寄存器或逃逸到堆上）或命名返回值变量 -> 按 LIFO 执行当前函数的 defer 列表 -> 当前函数返回（临时变量或命名返回值）
 - 发生 panic 时流程：进入当前函数 -> 执行代码 -> 发生 panic -> 中断当前函数的执行 -> 按 LIFO 执行当前函数的 defer 列表
-  - 如果某个被 defer 的函数体中有 `recover()`：当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码，返回非命名返回值类型的零值或命名返回值的值），调用当前函数的上层函数从调用点之后继续执行
-  - 否则：当前函数执行完 defer 列表后，继续将 panic 向上传播给它的调用者；如果传播到当前协程的调用栈顶仍没有 `recover()`，则整个程序崩溃
+  - 如果某个被 defer 的函数体中有 `recover()`，当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码，返回非命名返回值类型的零值或命名返回值的值），调用当前函数的上层函数从调用点之后继续执行
+  - 否则，当前函数执行完 defer 列表后，继续将 panic 向上传播给它的调用者。如果传播到当前协程的调用栈顶仍没有 `recover()`，则整个程序崩溃
 
 Go 中 return 语句并非原子操作，它大致分为三步：
 
@@ -263,43 +263,6 @@ func trace(msg string) func() {
 func main() {
  bigSlowOperation()
 }
-```
-
-## defer 对方法值的求值时机 todo
-
-`defer f.Close()` 这类写法在 defer 语句处求值的对象是方法值 `f.Close`，接收者 `f` 在此刻被固定。若方法使用值接收者，则接收者在 defer 语句处被复制，方法体执行时读到的是复制时刻的字段值；若方法使用指针接收者，固定下来的是指针本身，方法体执行时读到的是该变量的最新值。
-
-```go
-type Reporter struct {
- name string
- n    int
-}
-
-func (r Reporter) Report() { // 值接收者：defer 语句处复制接收者
- fmt.Println(r.name, r.n)
-}
-
-type Counter struct {
- n int
-}
-
-func (c *Counter) Report() { // 指针接收者：defer 语句处固定指针
- fmt.Println(c.n)
-}
-
-func main() {
- r := Reporter{name: "defer 处的值", n: 1}
- defer r.Report()            // 值接收者，输出：defer 处的值 1
- r = Reporter{name: "return 前的值", n: 2}
-
- c := &Counter{n: 1}
- defer c.Report()            // 指针接收者，输出：2
- c.n++
-}
-
-// 输出：
-// 2
-// defer 处的值 1
 ```
 
 ## defer 中的错误处理
