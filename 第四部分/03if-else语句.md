@@ -73,7 +73,7 @@ if err := doSomething(); err != nil {
 }
 ```
 
-映射（map）取值检查：
+映射取值检查：
 
 ```go
 if val, ok := m["key"]; ok {
@@ -81,7 +81,7 @@ if val, ok := m["key"]; ok {
 }
 ```
 
-类型断言（type assertion）：
+类型断言（Type Assertion）：
 
 ```go
 if s, ok := val.(string); ok {
