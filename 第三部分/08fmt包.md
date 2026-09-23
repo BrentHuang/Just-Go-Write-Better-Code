@@ -9,7 +9,7 @@
 - [func Scanf(format string, a ...any) (n int, err error)](https://pkg.go.dev/fmt#Scanf) 从标准输入读取文本，并按照格式字符串的指示，将其中连续出现的、以空格分隔的值依次存入对应的参数中。返回成功扫描的项数，如果返回的项数少于参数个数则表示有错误发生。输入中的换行符必须与格式字符串中的换行符严格匹配。唯一的例外是：占位符 `%c` 始终读取输入中的下一个字符（rune），即便它是空白符（如空格、制表符等）或换行符也不例外
 - [func Scanln(a ...any) (n int, err error)](https://pkg.go.dev/fmt#Scanln) 与 `fmt.Scan` 类似，区别在于它遇到换行符即停止扫描，且最后一个参数之后必须紧跟着换行符或 EOF
 
-`fmt` 包的文档并未承诺上述函数是并发安全的。多协程并发调用 `fmt.Println` 时，输出可能相互交错，并可能出现数据竞争。如果需要并发安全的输出，应使用 log 包（其 Logger 保证串行化访问 Writer），或自行加锁。
+`fmt.Print`、`fmt.Printf`、`fmt.Println` 是并发安全的，多个协程并发调用 `fmt.Println("hello")` 和 `fmt.Println("world")`，输出一定是完整的 `hello\n` 或 `world\n`，不会出现 `heworld\nllo\n` 这种交错。
 
 上述函数的变体如下：
 

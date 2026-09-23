@@ -171,7 +171,7 @@ func main() {
 }
 ```
 
-fallthrough 不能用在类型选择（type switch）中，因为 type switch 按具体类型匹配，一个值只会命中其中一个 case，穿透到下一个 case 没有意义。类型选择的详细用法将在后续章节介绍。
+fallthrough 不能用在类型选择（Type Switch）中，因为 Type Switch 按具体类型匹配，一个值只会命中其中一个 case，穿透到下一个 case 没有意义。类型选择的详细用法将在后续章节介绍。
 
 ## 其它可比较类型
 

@@ -170,7 +170,7 @@ func main() {
  perms.Set(FlagWrite)
  perms.Set(FlagExecute)
 
- fmt.Printf("权限: %s\n", perms.String()) // 权限：[READ WRITE EXECUTE]
+ fmt.Printf("权限: %s\n", perms.String()) // 权限：READ|WRITE|EXECUTE
  fmt.Printf("二进制：%08b\n", perms)        // 二进制：00000111
 
  // 检查权限
@@ -179,6 +179,6 @@ func main() {
 
  // 切换权限
  perms.Toggle(FlagWrite)
- fmt.Printf("切换写权限后: %s\n", perms.String()) // 切换写权限后：[READ EXECUTE]
+ fmt.Printf("切换写权限后: %s\n", perms.String()) // 切换写权限后：READ|EXECUTE
 }
 ```
