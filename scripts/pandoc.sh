@@ -101,7 +101,13 @@ build() {
                 build "${dir}"
             done
         else
-            # 如果 input 文件没有.md 后缀，就添加一个
+            # 如果 input 文件有后缀名但不是 .md 文件，就忽略
+            if [[ "${input}" != *.md && "${input}" == *.* ]]; then
+                echo "Error: skip non-markdown file ${input}" >&2
+                continue
+            fi
+
+            # 如果 input 文件没有 .md 后缀，就添加一个
             input="${input%.md}.md"
 
             # 检查 input 文件是否存在
@@ -114,21 +120,25 @@ build() {
             # output 文件取 input 文件的前缀（不要 .md 后缀），添加 .html 后缀
             output="${input%.md}.html"
 
-            pandoc "${input}" \
+            if ! pandoc "${input}" \
                 --template="${SCRIPT_DIR}/my-template.html" \
                 --standalone \
                 --toc \
                 --syntax-highlighting=tango \
                 --lua-filter="${SCRIPT_DIR}/md-to-html.lua" \
                 --include-before-body="${SIDEBAR_FILE}" \
-                -o "${output}"
+                -o "${output}"; then
+                echo "Error: failed to build ${input}" >&2
+                continue
+            fi
+            
             echo "Built ${output}"
         fi
     done
 }
 
 usage() {
-    # 至少有一个参数，允许有多个输入参数，参数可以是文件，也可以是目录（递归处理）
+    # 至少有一个参数，允许有多个输入参数，参数可以是 .md 文件，也可以是目录（递归处理）
     echo "Usage: $0 <input> [input2] ..."
 }
 
