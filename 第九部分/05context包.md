@@ -15,15 +15,15 @@ type Context interface {
 
 - `Deadline() (deadline time.Time, ok bool)`：返回上下文被取消的截止时间（绝对时间），未设置截止时间则返回 ok 为 false
 - `Done() <-chan struct{}`：返回一个只读通道，上下文被取消（手动取消、超时或到达截止时间等）时该通道关闭。通过 select 监听此通道是感知取消信号的标准方式
-- `Err() error`：返回上下文被取消的原因。在 `Done()` 通道关闭后返回非 nil 错误（如 `context.Canceled` 或 `context.DeadlineExceeded`）；如果 `Done()` 通道尚未关闭，返回 nil
-- `Value(key any) any`：根据 key 获取上下文中存储的 value，若 key 未关联任何 value 则返回 nil。应谨慎使用，通常仅用于传递请求范围（Request-Scoped）的元数据，如 RequestID、用户认证信息等
+- `Err() error`：返回上下文被取消的原因。在 `Done()` 通道关闭后返回非 `nil` 错误（如 `context.Canceled` 或 `context.DeadlineExceeded`）；如果 `Done()` 通道尚未关闭，返回 `nil`
+- `Value(key any) any`：根据 key 获取上下文中存储的 value，若 key 未关联任何 value 则返回 `nil`。应谨慎使用，通常仅用于传递请求范围（Request-Scoped）的元数据，如 RequestID、用户认证信息等
 
 ### 根上下文与派生上下文
 
 所有上下文必须由根上下文派生，不能手动创建 Context 实例。有“主根上下文”和“占位上下文”两种根上下文：
 
-- [func Background() Context](https://pkg.go.dev/context#Background)：返回一个空的、非 nil 的 Context 实例（主根上下文），它永远不会被取消，没有截止时间，也不存储任何 value。它通常被 main 函数、初始化和测试使用，并作为请求（Requests）的顶层上下文
-- [func TODO() Context](https://pkg.go.dev/context#TODO)：返回一个空的、非 nil 的 Context 实例（占位上下文），仅当不清楚要使用哪个 Context 或 Context 尚不可用时（因为周围的函数尚未扩展以接受 Context 参数）时临时使用
+- [func Background() Context](https://pkg.go.dev/context#Background)：返回一个空的、非 `nil` 的 Context 实例（主根上下文），它永远不会被取消，没有截止时间，也不存储任何 value。它通常被 main 函数、初始化和测试使用，并作为请求（Requests）的顶层上下文
+- [func TODO() Context](https://pkg.go.dev/context#TODO)：返回一个空的、非 `nil` 的 Context 实例（占位上下文），仅当不清楚要使用哪个 Context 或 Context 尚不可用时（因为周围的函数尚未扩展以接受 Context 参数）时临时使用
 
 四种派生上下文：
 
@@ -37,7 +37,7 @@ type Context interface {
 - 链式派生，上下文不可变：每次基于父 context 调用 WithCancel、WithDeadline、WithTimeout、WithValue 返回的都是新的子上下文实例，形成上下文树，父 context 被取消时所有子上下文也会被取消
 - 只要调用了 WithCancel、WithDeadline、WithTimeout，就应在函数退出前调用返回的 `cancel()` 函数（通常用 `defer cancel()`）。即使上下文因超时等原因自动取消，手动调用 `cancel()` 也能确保及时释放资源，这是一种良好的实践
 - 所有派生上下文的 `Done()` 通道关闭条件相同：手动调用 cancel、超时/截止时间到达、或父上下文取消，以先发生者为准
-- Context 应作为函数的第一个参数，参数名通常叫 ctx，应始终传递有效的 Context 给函数，不要传递 nil
+- Context 应作为函数的第一个参数，参数名通常叫 ctx，应始终传递有效的 Context 给函数，不要传递 `nil`
 - Context 是 Goroutine-Safe 的，同一 Context 实例可被多个 Goroutine 共享而不需要额外加锁，实现级联取消
 - 调用 `cancel()` 只是发送取消信号，并非强制终止 Goroutine。Goroutine 必须监听取消信号（如检查 `ctx.Done()` 通道是否关闭），否则不会被终止
 - 在 HTTP 消息处理器内部应使用请求本身携带的上下文 `r.Context()`，它能够在客户端断开连接时发出取消信号，从而及时终止下游操作

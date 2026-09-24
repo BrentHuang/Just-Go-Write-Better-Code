@@ -249,11 +249,11 @@ type Optimize struct {
 
 [func String(ptr *byte, len IntegerType) string](https://pkg.go.dev/unsafe#String)（Go 1.20 引入）返回一个字符串值，其底层字节序列从 ptr 开始，长度为 len。
 
-[func StringData(str string) *byte](https://pkg.go.dev/unsafe#StringData)（Go 1.20 引入）返回指向 str 底层字节序列的指针，返回的字节不能被修改。对于空字符串，返回值未指定，可能为 nil。
+[func StringData(str string) *byte](https://pkg.go.dev/unsafe#StringData)（Go 1.20 引入）返回指向 str 底层字节序列的指针，返回的字节不能被修改。对于空字符串，返回值未指定，可能为 `nil`。
 
 [func Slice(ptr *ArbitraryType, len IntegerType) []ArbitraryType](https://pkg.go.dev/unsafe#Slice)（Go 1.17 引入）返回一个切片，其底层数组从 ptr 开始，长度和容量均为 len。
 
-[func SliceData(slice []ArbitraryType) *ArbitraryType](https://pkg.go.dev/unsafe#SliceData)（Go 1.20 引入）返回参数 slice 的 `data` 指针，即指向底层数组中该切片的首个元素的指针。对 nil 切片返回 nil 指针。
+[func SliceData(slice []ArbitraryType) *ArbitraryType](https://pkg.go.dev/unsafe#SliceData)（Go 1.20 引入）返回参数 slice 的 `data` 指针，即指向底层数组中该切片的首个元素的指针。对 `nil` 切片返回 `nil` 指针。
 
 在 `string` 与 `[]byte` 类型互转时，如果要避免内存分配和拷贝，可以使用这几个函数。
 

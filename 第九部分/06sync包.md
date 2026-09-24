@@ -561,14 +561,14 @@ func main() {
 
 核心方法：
 
-- [func (p *Pool) Get() any](https://pkg.go.dev/sync#Pool.Get)：取出对象，有则复用，无则返回 nil 或调用 p.New 自动创建（如果 p.New 不为 nil）
+- [func (p *Pool) Get() any](https://pkg.go.dev/sync#Pool.Get)：取出对象，有则复用，无则返回 `nil` 或调用 p.New 自动创建（如果 p.New 不为 `nil`）
 - [func (p *Pool) Put(x any)](https://pkg.go.dev/sync#Pool.Put)：用完对象放回池子，不保证 Put 进去的对象一定能 Get 到，因为可能被 GC 清理掉了
 
 Get 是“取走”语义，如果不 Put 回去，Pool 中的对象就会减少，后续 Get 会触发 New 创建新对象，失去 Pool 的复用意义。
 
 永远不要假设 Get 拿到的对象一定存在，也永远不要指望 Get 能拿到刚刚 Put 进去的那个对象。在代码实现上，你必须写兜底逻辑：
 
-- 如果 Get 返回 nil（且你没设置 p.New），你要自己 new 一个
+- 如果 Get 返回 `nil`（且你没设置 p.New），你要自己 new 一个
 - 如果 Get 返回了一个旧对象（虽然是同一个内存地址），它可能残留着上一次使用的脏数据，必须重置（Reset）后再使用
 
 大量频繁创建同类型的字节缓冲区或复杂对象时可以使用 sync.Pool。
@@ -727,9 +727,9 @@ type Group struct {
 
 关键方法：
 
-- [func WithContext(ctx context.Context) (*Group, context.Context)](https://pkg.go.dev/golang.org/x/sync/errgroup#WithContext) 创建带上下文的 Group 实例，返回新创建的 group，该 group 关联一个从 ctx 派生的 Context 实例。当传递给 `g.Go()` 的函数 f 首次返回非 nil 错误，或 `g.Wait()` 首次返回时，ctx 会被取消，以先发生者为准
-- [(g *Group) Go(f func() error)](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.Go) 启动一个协程执行给定的函数 f，f 返回 nil：无错误，返回非 nil：group 记录第一个错误（如果多个协程返回错误，只记录第一个，后续错误被丢弃），并触发 ctx 取消（如果关联的有 ctx），该错误将由 `g.Wait()` 返回。协程必须监听 ctx 取消事件（`select <-ctx.Done()`）实现优雅退出
-- [(g *Group) Wait() error](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.Wait) 阻塞等待所有通过 `g.Go()` 启动的协程执行完毕，返回它们中的第一个非 nil 错误（如果有），无错误返回 nil。注意：`g.Wait()` 只会等待 `g.Go()` 启动的协程执行完毕，不会等待在 `g.Go()` 启动的协程执行的 f 函数中启动的协程
+- [func WithContext(ctx context.Context) (*Group, context.Context)](https://pkg.go.dev/golang.org/x/sync/errgroup#WithContext) 创建带上下文的 Group 实例，返回新创建的 group，该 group 关联一个从 ctx 派生的 Context 实例。当传递给 `g.Go()` 的函数 f 首次返回非 `nil` 错误，或 `g.Wait()` 首次返回时，ctx 会被取消，以先发生者为准
+- [(g *Group) Go(f func() error)](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.Go) 启动一个协程执行给定的函数 f，f 返回 `nil`：无错误，返回非 `nil`：group 记录第一个错误（如果多个协程返回错误，只记录第一个，后续错误被丢弃），并触发 ctx 取消（如果关联的有 ctx），该错误将由 `g.Wait()` 返回。协程必须监听 ctx 取消事件（`select <-ctx.Done()`）实现优雅退出
+- [(g *Group) Wait() error](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.Wait) 阻塞等待所有通过 `g.Go()` 启动的协程执行完毕，返回它们中的第一个非 `nil` 错误（如果有），无错误返回 `nil`。注意：`g.Wait()` 只会等待 `g.Go()` 启动的协程执行完毕，不会等待在 `g.Go()` 启动的协程执行的 f 函数中启动的协程
 - [func (g *Group) SetLimit(n int)](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.SetLimit) 将 group 中的活跃协程数量限制为最多 n 个，默认无限制，负值表示无限制，0 限制将阻止任何新的协程被添加
 
 Group 的零值是有效的，它没有活跃协程数量限制，并且在发生错误时不自动取消（没有 cancel 能力）。基本示例：
@@ -900,7 +900,7 @@ func main() {
 核心方法：
 
 - [func NewWeighted(n int64) *Weighted](https://pkg.go.dev/golang.org/x/sync/semaphore#NewWeighted) 创建一个新的加权信号量，该信号量具有给定的最大并发访问权重限制
-- [func (s *Weighted) Acquire(ctx context.Context, n int64) error](https://pkg.go.dev/golang.org/x/sync/semaphore#Weighted.Acquire) 获取 n 权重资源，n 非负，当资源不可用时会阻塞协程。成功返回 nil；失败返回 ctx.Err() 的结果，并且信号量状态保持不变
+- [func (s *Weighted) Acquire(ctx context.Context, n int64) error](https://pkg.go.dev/golang.org/x/sync/semaphore#Weighted.Acquire) 获取 n 权重资源，n 非负，当资源不可用时会阻塞协程。成功返回 `nil`；失败返回 ctx.Err() 的结果，并且信号量状态保持不变
 - [func (s *Weighted) Release(n int64)](https://pkg.go.dev/golang.org/x/sync/semaphore#Weighted.Release) 释放 n 权重资源
 - [func (s *Weighted) TryAcquire(n int64) bool](https://pkg.go.dev/golang.org/x/sync/semaphore#Weighted.TryAcquire) 尝试获取资源，当资源不可用时不阻塞协程，直接返回 false
 

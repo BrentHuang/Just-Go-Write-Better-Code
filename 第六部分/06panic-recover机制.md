@@ -12,7 +12,7 @@ func main() {
 }
 ```
 
-内置函数 [func recover() any](https://pkg.go.dev/builtin#recover) 的作用是捕获 panic，恢复协程的执行。`recover()` 的返回值就是传给 `panic()` 的参数。如果没有发生 panic，`recover()` 返回 nil。注意：`recover()` 仅在被 defer 的函数体中有效，如果 `recover()` 不在被 defer 的函数体中，则不会捕获任何 panic。
+内置函数 [func recover() any](https://pkg.go.dev/builtin#recover) 的作用是捕获 panic，恢复协程的执行。`recover()` 的返回值就是传给 `panic()` 的参数。如果没有发生 panic，`recover()` 返回 `nil`。注意：`recover()` 仅在被 defer 的函数体中有效，如果 `recover()` 不在被 defer 的函数体中，则不会捕获任何 panic。
 
 发生 panic 后，会立即中断当前函数的执行，按 LIFO 执行当前函数的 defer 列表。如果某个被 defer 的函数体中有 `recover()`，当前函数执行完 defer 列表后直接返回（不会继续执行 panic 发生点之后的代码，返回未命名返回值的零值或命名返回值的当前值），调用当前函数的上层函数会从调用点之后继续执行；否则，当前函数执行完 defer 列表后，继续将 panic 向上传播给它的调用者，如果传播到当前协程的调用栈顶仍没有 `recover()` 则整个程序崩溃。
 

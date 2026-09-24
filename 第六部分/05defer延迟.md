@@ -468,7 +468,7 @@ func main() {
 
 ## runtime.Goexit() 对 recover 的影响
 
-[func Goexit()](https://pkg.go.dev/runtime#Goexit) 的主要用途是让当前协程“体面地”提前退出，同时确保 defer 中的清理逻辑被执行，但 defer 中的 `recover()` 返回 nil，因为 Goexit 不是 panic。
+[func Goexit()](https://pkg.go.dev/runtime#Goexit) 的主要用途是让当前协程“体面地”提前退出，同时确保 defer 中的清理逻辑被执行，但 defer 中的 `recover()` 返回 `nil`，因为 Goexit 不是 panic。
 
 当 `main()` 函数返回时，整个程序就结束了。如果在 `main()` 函数中启动了一个后台协程，但 `main()` 自己没什么事可做了，直接 return 会立刻杀掉后台协程。一种常见的做法是在 `main()` 中调用 `runtime.Goexit()`，这样 `main` 协程会终止，但 `main()` 函数不返回，不会触发程序退出，程序会继续运行其它协程。
 

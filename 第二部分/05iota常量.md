@@ -14,7 +14,7 @@ const iota = 0 // Untyped int.
 - 重置归零：一旦遇到新的 const 声明，iota 即被重置为 0
 
 | 用法分类 | 代码示例 | 常量值说明 | 核心要点 |
-| -- | -- | -- | -- |
+| --- | --- | --- | --- |
 | 基础递增 | const (<br> A = iota<br> B<br> C<br> ) | `A=0, B=1, C=2` | 最基本的自动递增，从 0 开始的行索引 |
 | iota 表达式 | const (<br> A = iota * 2<br> B<br> C<br> ) | `A=0, B=2, C=4` | B、C 继承 `iota * 2` 表达式 |
 | 跳过值 | const (<br> A = iota<br> _<br> B<br> ) | `A=0, B=2` | 使用空白标识符 `_` 占位并忽略该值，该行仍消耗一次 iota 计数，递增不中断 |
