@@ -233,6 +233,86 @@
                 border-left-color: var(--accent);
             }
 
+            /* ===== 移动端：本页目录（顶栏右侧按钮 + 下拉面板） ===== */
+            .outline-toggle {
+                display: none;
+                margin-left: auto;
+                align-items: center;
+                gap: 0.4rem;
+                height: 2.25rem;
+                padding: 0 0.75rem;
+                background: transparent;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                color: var(--fg);
+                cursor: pointer;
+                font: inherit;
+                font-size: 0.9rem;
+                font-weight: 500;
+                flex: none;
+                white-space: nowrap;
+            }
+            .outline-toggle:hover {
+                border-color: var(--accent);
+                color: var(--accent);
+            }
+            .outline-toggle .chevron {
+                font-size: 0.7rem;
+                transition: transform 0.2s ease;
+            }
+            body.outline-open .outline-toggle .chevron {
+                transform: rotate(180deg);
+            }
+
+            .outline-mobile {
+                position: fixed;
+                top: var(--topbar-h);
+                left: 50%;
+                width: min(320px, 86vw);
+                max-height: calc(100vh - var(--topbar-h));
+                overflow-y: auto;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-top: none;
+                border-radius: 0 0 var(--radius) var(--radius);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+                padding: 0.5rem 0.75rem 1rem;
+                z-index: 55;
+                opacity: 0;
+                transform: translateX(-50%) translateY(-8px);
+                pointer-events: none;
+                transition:
+                    opacity 0.2s ease,
+                    transform 0.2s ease;
+            }
+            body.outline-open .outline-mobile {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+                pointer-events: auto;
+            }
+            .outline-mobile-nav ul {
+                list-style: none;
+                margin: 0;
+                padding-left: 0;
+            }
+            .outline-mobile-nav ul ul {
+                padding-left: 1em;
+            }
+            .outline-mobile-nav li {
+                margin: 0.15em 0;
+            }
+            .outline-mobile-nav a {
+                display: block;
+                font-size: 0.88rem;
+                color: var(--muted);
+                text-decoration: none;
+                padding: 0.15em 0.5em;
+                border-left: 2px solid transparent;
+            }
+            .outline-mobile-nav a:hover {
+                color: var(--accent);
+            }
+
             /* ===== 遮罩层（移动端抽屉展开时） ===== */
             .backdrop {
                 position: fixed;
@@ -496,6 +576,7 @@
                 .topbar,
                 .sidebar,
                 .outline,
+                .outline-mobile,
                 .backdrop {
                     display: none;
                 }
@@ -516,10 +597,13 @@
                 }
             }
 
-            /* ===== 响应式：中等屏幕隐藏右侧本页目录 ===== */
+            /* ===== 响应式：中等屏幕隐藏右侧本页目录，顶栏右侧显示本页目录按钮 ===== */
             @media (max-width: 1280px) {
                 .outline {
                     display: none;
+                }
+                .outline-toggle {
+                    display: inline-flex;
                 }
                 .content {
                     margin-right: 0;
@@ -579,6 +663,12 @@
         <header class="topbar">
             <button class="menu-toggle" id="menu-toggle" aria-label="切换目录">☰</button>
             <a class="brand" href="../前言/index.html">Just Go · 写出更好的代码</a>
+            $if(toc)$
+            <button class="outline-toggle" id="outline-toggle" aria-expanded="false">
+                <span>本页目录</span>
+                <span class="chevron" aria-hidden="true">▾</span>
+            </button>
+            $endif$
         </header>
 
         $if(toc)$
@@ -586,6 +676,10 @@
             <div class="outline-title">本页目录</div>
             <nav id="$idprefix$TOC" role="doc-toc">$table-of-contents$</nav>
         </aside>
+        $endif$ $if(toc)$
+        <div class="outline-mobile" id="outline-mobile">
+            <nav class="outline-mobile-nav" role="doc-toc">$table-of-contents$</nav>
+        </div>
         $endif$
 
         <div class="backdrop" id="backdrop"></div>
@@ -640,6 +734,35 @@
                         a.scrollIntoView({ block: 'nearest' })
                     }
                 })
+
+                // 移动端：本页目录按钮（顶栏右侧）展开/收起下拉面板
+                var outlineToggle = document.getElementById('outline-toggle')
+                var outlineMobile = document.getElementById('outline-mobile')
+                function closeOutline() {
+                    document.body.classList.remove('outline-open')
+                    if (outlineToggle) outlineToggle.setAttribute('aria-expanded', 'false')
+                }
+                if (outlineToggle && outlineMobile) {
+                    outlineToggle.addEventListener('click', function (e) {
+                        e.stopPropagation()
+                        var open = document.body.classList.toggle('outline-open')
+                        outlineToggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+                    })
+                    outlineMobile.querySelectorAll('a[href^="#"]').forEach(function (a) {
+                        a.addEventListener('click', closeOutline)
+                    })
+                    document.addEventListener('click', function (e) {
+                        if (document.body.classList.contains('outline-open')) {
+                            if (
+                                !outlineMobile.contains(e.target) &&
+                                e.target !== outlineToggle &&
+                                !outlineToggle.contains(e.target)
+                            ) {
+                                closeOutline()
+                            }
+                        }
+                    })
+                }
 
                 // 右侧本页目录：随滚动高亮当前小节
                 var outlineLinks = document.querySelectorAll('#outline a[href^="#"]')
