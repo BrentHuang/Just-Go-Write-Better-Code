@@ -446,6 +446,8 @@
                 color: var(--code-fg);
                 padding: 0.15em 0.4em;
                 border-radius: 4px;
+                overflow-wrap: anywhere;
+                word-break: break-word;
             }
 
             /* ===== 代码块（通用 pre，不含 sourceCode 包装） ===== */
@@ -471,7 +473,7 @@
                 background: var(--code-bg);
                 border: 1px solid var(--border);
                 border-radius: var(--radius);
-                padding: 1em 1.2em;
+                padding: 1em 0 1em 1.2em;
                 overflow-x: auto;
                 margin: 1.2em 0;
             }
@@ -480,9 +482,10 @@
                 background: transparent;
                 border: none;
                 border-radius: 0;
-                padding: 0;
+                padding: 0 1.2em 0 0;
                 margin: 0;
-                overflow-x: visible;
+                max-width: 100%;
+                overflow-x: auto;
                 line-height: 1.6;
             }
 
@@ -513,6 +516,8 @@
             table {
                 border-collapse: collapse;
                 width: 100%;
+                max-width: 100%;
+                table-layout: fixed;
                 margin: 1.2em 0;
                 font-size: 0.95em;
                 overflow: hidden;
@@ -524,6 +529,8 @@
                 padding: 0.6em 1em;
                 text-align: left;
                 border-bottom: 1px solid var(--border);
+                overflow-wrap: anywhere;
+                word-break: break-word;
             }
             th {
                 background: var(--accent-soft);
