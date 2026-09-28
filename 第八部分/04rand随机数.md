@@ -55,7 +55,7 @@ func main() {
  if err != nil {
   panic(err) // 这里仅为示例，在实际代码中应妥善处理错误
  }
- fmt.Printf("随机字节：%x\n", b) // 例如：8f6e7a9b...
+ fmt.Printf("随机字节：%x\n", b) // 随机字节：8f6e7a9b...
 }
 ```
 

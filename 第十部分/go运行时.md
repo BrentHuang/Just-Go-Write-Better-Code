@@ -1,6 +1,6 @@
 ## Go 运行时 todo 这一章放哪里合适？
 
-Go 运行时（Runtime）是静态嵌入二进制的底层支撑代码（并非 JVM 类虚拟机或 Python 解释器），程序启动自动初始化，全程接管程序与操作系统交互。源码位于 `${GOROOT}/src/runtime/`，主体由 Go 编写，Goroutine 切换、上下文调度等性能关键路径使用汇编实现；无外部运行时依赖，最简单的 `fmt.Println` 也依赖 Runtime 内存分配与调度逻辑。
+Go 运行时（Runtime）是静态嵌入二进制的底层支撑代码（并非 JVM 类虚拟机或 Python 解释器），程序启动自动初始化，全程接管程序与操作系统交互。源代码位于 `${GOROOT}/src/runtime/`，主体由 Go 编写，Goroutine 切换、上下文调度等性能关键路径使用汇编实现；无外部运行时依赖，最简单的 `fmt.Println` 也依赖 Runtime 内存分配与调度逻辑。
 
 Runtime 五大核心能力：
 
