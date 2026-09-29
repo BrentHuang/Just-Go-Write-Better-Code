@@ -311,7 +311,7 @@ func readFile(path string) (string, error) {
 }
 
 func main() {
- // 在当前目录下创建 test.txt 文件，内容为 123
+ // 在当前目录创建 test.txt 文件，内容为 123
  if err := createFile("test.txt", "123"); err != nil {
   return
  }
@@ -378,7 +378,7 @@ func readFile(path string) (content string, err error) { // 命名返回值
 }
 
 func main() {
- // 在当前目录下创建 test.txt 文件，内容为 123
+ // 在当前目录创建 test.txt 文件，内容为 123
  if err := createFile("test.txt", "123"); err != nil {
   return
  }

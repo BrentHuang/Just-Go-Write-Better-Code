@@ -36,7 +36,7 @@ Go 标准库提供了 [filepath](https://pkg.go.dev/path/filepath#pkg-overview) 
 
 ```go
 func main() {
- // 匹配当前目录下所有 .go 文件
+ // 匹配当前目录下的所有 .go 文件
  matches, _ := filepath.Glob("*.go")
  for _, p := range matches {
   fmt.Println(p)
