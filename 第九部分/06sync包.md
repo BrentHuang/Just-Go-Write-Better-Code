@@ -213,7 +213,7 @@ func main() {
 
 [sync.WaitGroup](https://pkg.go.dev/sync#WaitGroup) 是一个计数信号量，通常用于等待一组协程执行完毕。通常，主协程会调用 WaitGroup.Go 来启动多个任务，然后调用 WaitGroup.Wait 来等待所有任务完成。
 
-结构体定义（源代码：`${GOROOT}/src/sync/waitgroup.go`）：
+结构体定义（源码：`${GOROOT}/src/sync/waitgroup.go`）：
 
 ```go
 type WaitGroup struct {

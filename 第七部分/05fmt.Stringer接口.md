@@ -149,7 +149,7 @@ func main() {
 }
 ```
 
-fmt 的接口匹配优先级（源代码：`${GOROOT}/src/fmt/print.go`）:
+fmt 的接口匹配优先级（源码：`${GOROOT}/src/fmt/print.go`）:
 
 ```text
 1. Formatter.Format()          ← 始终检查，所有动词
