@@ -153,7 +153,7 @@ func main() {
 
   if i == 0 {
    s = slices.Insert(s, 0, []int{4, 5, 6}...) // 在头部插入 3 个元素，切片长度增加 3
-   fmt.Printf("插入后长度：%d\n", len(s))           // 6
+   fmt.Printf("插入后长度：%d\n", len(s))       // 6
   }
 
   if i == 1 {

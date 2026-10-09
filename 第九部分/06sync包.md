@@ -429,7 +429,7 @@ func Withdraw(amount int) bool {
 func deposit(amount int) { balance += amount }
 ```
 
-Go 官方文档明确禁止递归读锁（recursive read locking）。同一协程多次调用 `RLock()` 不保证安全，如果在两次 `RLock()` 之间有其它协程调用了 `Lock()`，则会死锁。
+Go 官方文档明确禁止递归读锁（recursive read locking）。同一协程多次调用 `RLock()` 不保证安全，如果在两次 `RLock()` 之间有其他协程调用了 `Lock()`，则会死锁。
 
 ```go
 // Mutex 不可重入：同一个协程对同一把锁加锁两次，第二次会死锁
@@ -479,7 +479,7 @@ func main() {
 RWMutex 不会检查锁是谁持有的（它不记录协程 ID），所以：
 
 - 场景 A（无写者等待）：同一个协程连续调用两次 `RLock()` 是可以通过的，读锁计数会从 1 变成 2，此时递归是成功的
-- 场景 B（有写者等待）：如果在两次 `RLock()` 之间，有其它协程调用了 `Lock()` 正在排队，那么第二次 `RLock()` 就会被阻塞，导致死锁
+- 场景 B（有写者等待）：如果在两次 `RLock()` 之间，有其他协程调用了 `Lock()` 正在排队，那么第二次 `RLock()` 就会被阻塞，导致死锁
   
 死锁的原因是 Go 的 RWMutex 遵循“写者优先”（Writer Preference）原则：一旦有写锁（`Lock`）被阻塞在队列里，系统会认为“写操作更重要，不能再让新的读操作插队了，否则写者永远拿不到锁”。因此，系统会把所有后续到来的 `RLock` 请求（无论来自哪个协程）全部拦截，让写者先走。正因为第二次 `RLock` 被拦截了，而你又持有第一次的 `RLock` 没释放，所以互相等待，形成死锁。
 
@@ -539,7 +539,7 @@ func GetXXSingleton() *XXSingleton {
  xxOnce.Do(func() { // 传入一个闭包
   fmt.Println("仅执行一次初始化")
   xxInstance = &XXSingleton{data: "sync.Once 单例"}
-  // 其它的初始化逻辑
+  // 其他的初始化逻辑
  })
  return xxInstance
 }
@@ -937,7 +937,7 @@ func main() {
 
 singleflight 的核心作用是将并发请求合并成单个请求，从而在高并发场景下防止缓存击穿（Cache Breakdown）。
 
-缓存击穿特指热点数据过期（非缓存雪崩）的瞬间，海量请求直接穿透缓存打到数据库。singleflight 能保证在同一时刻，针对同一个 Key，只有一个请求真正去执行代价高昂的函数（如查 DB），其它请求只需等待并共享第一个请求的结果。
+缓存击穿特指热点数据过期（非缓存雪崩）的瞬间，海量请求直接穿透缓存打到数据库。singleflight 能保证在同一时刻，针对同一个 Key，只有一个请求真正去执行代价高昂的函数（如查 DB），其他请求只需等待并共享第一个请求的结果。
 
 核心结构是 `singleflight.Group`，两个常用方法：
 
@@ -964,7 +964,7 @@ func fetchFromDB(id string) (string, error) {
 func getDataByID(id string) (string, error) {
  // 使用 Do 方法，key 可以是业务 ID，如 user id
  v, err, shared := sf.Do(id, func() (any, error) {
-  // 这里只会有一个请求真正执行，其它请求会等待并共享第一个请求的结果
+  // 这里只会有一个请求真正执行，其他请求会等待并共享第一个请求的结果
   return fetchFromDB(id)
  })
  if err != nil {
@@ -1002,6 +1002,6 @@ func main() {
 - 请求到来，先查 Redis
 - Redis 缓存未命中（或 key 过期），不直接查 DB，而是调用 sf.Do
 - sf.Do 内部查询 DB 并根据 shared 标识是否回填 Redis
-- 其它并发请求阻塞并等待该结果
+- 其他并发请求阻塞并等待该结果
 
 这样，即便缓存瞬间失效，底层 DB 也毫无压力，完美解决了热点 key 失效带来的雪崩效应。

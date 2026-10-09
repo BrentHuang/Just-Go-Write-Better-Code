@@ -88,7 +88,9 @@ func init() {
 func Foo() {
  fmt.Println("Foo")
 }
+```
 
+```go
 // bar/bar.go
 package bar
 
@@ -149,7 +151,7 @@ func init() {
 // 在 main.go 或任意需要数据库连接的源文件中，导入驱动包即可触发其 init() 执行
 import _ "github.com/go-sql-driver/mysql"
 
-// database/drivers/mysql.go  --驱动包内部
+// 驱动包内部（如 github.com/go-sql-driver/mysql 模块中的 mysql.go）
 import "database/sql"
 
 func init() {

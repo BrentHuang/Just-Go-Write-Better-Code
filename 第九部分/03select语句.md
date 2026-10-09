@@ -37,7 +37,7 @@ func main() {
    fmt.Printf("处理 B: %s\n", msg)
    // 处理完 B 后，可以在这里添加 return 来退出循环
   default:
-   fmt.Println("没有就绪的通道，执行其它任务或退出...")
+   fmt.Println("没有就绪的通道，执行其他任务或退出...")
    return // 退出 for 循环
   }
  }

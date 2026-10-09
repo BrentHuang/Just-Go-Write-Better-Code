@@ -196,7 +196,7 @@ func main() {
 // main() continued
 ```
 
-示例 2：在 `main` 协程中的 `recover()` 无法捕获其它协程中的 `panic`，程序会崩溃：
+示例 2：在 `main` 协程中的 `recover()` 无法捕获其他协程中的 `panic`，程序会崩溃：
 
 ```go
 func main() {

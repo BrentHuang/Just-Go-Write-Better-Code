@@ -173,7 +173,7 @@ func main() {
 
 fallthrough 不能用在类型选择（Type Switch）中，因为 Type Switch 按具体类型匹配，一个值只会命中其中一个 case，穿透到下一个 case 没有意义。类型选择的详细用法将在后续章节介绍。
 
-## 其它可比较类型
+## 其他可比较类型
 
 除整型外，switch 可以处理各种可比较的类型，字符串是最常见的非整数应用场景之一。
 
@@ -194,10 +194,10 @@ func main() {
  // 但浮点运算会引入精度误差，实际项目中应避免直接比较浮点数
  ratio := 3.14
  switch ratio {
- case 3.14:
-  fmt.Println("约等于 π")
+  case 3.14:
+   fmt.Println("约等于 π")
   case 1.41:
    fmt.Println("约等于 √2")
-  }
+ }
 }
 ```

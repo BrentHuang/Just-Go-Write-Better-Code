@@ -19,7 +19,7 @@ const iota = 0 // Untyped int.
 | iota 表达式 | const (<br> A = iota * 2<br> B<br> C<br> ) | `A=0, B=2, C=4` | B、C 继承 `iota * 2` 表达式 |
 | 跳过值 | const (<br> A = iota<br> _<br> B<br> ) | `A=0, B=2` | 使用空白标识符 `_` 占位并忽略该值，该行仍消耗一次 iota 计数，递增不中断 |
 | 从 1 开始 | const (<br> _ = iota<br> Red<br> Green<br> ) | `Red=1, Green=2` | 跳过 0，从 1 开始计数 |
-| 中间插入显式值 | const (<br> A = iota<br> B = 100<br> C = iota<br> D<br> ) | `A=0, B=100, C=2, D=3` | iota 计数不会因插入其它值而中断 |
+| 中间插入显式值 | const (<br> A = iota<br> B = 100<br> C = iota<br> D<br> ) | `A=0, B=100, C=2, D=3` | iota 计数不会因插入其他值而中断 |
 | 一行多个常量 | const (<br> A, B = iota, iota+1<br> C, D<br> ) | `A=0, B=1, C=1, D=2` | 同一行 iota 值相同，后续行中的多个常量分别继承对应的表达式 |
 
 ```go

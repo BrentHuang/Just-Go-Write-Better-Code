@@ -252,11 +252,11 @@ func bigSlowOperation() {
 
 // 通用的 trace 函数
 // 与装饰器模式不同，这种方式要改被 trace 的函数代码：要在被 trace 的函数体中加一行 defer，并且要加在第一句
-func trace(msg string) func() {
+func trace(label string) func() {
  start := time.Now()
- fmt.Printf("enter, msg: %s\n", msg)
+ fmt.Printf("enter(%s)\n", label)
  return func() {
-  fmt.Printf("exit, msg: %s, duration: %v\n", msg, time.Since(start))
+  fmt.Printf("exit(%s), duration: %v\n", label, time.Since(start))
  }
 }
 
@@ -283,6 +283,7 @@ func createFile(path string, content string) error {
  }
  return nil
 }
+
 func readFile(path string) (string, error) {
  f, err := os.Open(path)
  if err != nil {
@@ -350,7 +351,7 @@ func readFile(path string) (content string, err error) { // 命名返回值
    errs = append(errs, fmt.Errorf("failed to close %s, err: %w", path, errClose))
   }
 
-  // 收集其它可能的 defer 错误
+  // 收集其他可能的 defer 错误
   if errSome := returnError(); errSome != nil {
    errs = append(errs, fmt.Errorf("failed to defer, err: %w", errSome))
   }
@@ -464,13 +465,13 @@ func main() {
 // 输出：hello
 ```
 
-应仅在 `main()` 函数体中根据实际需要调用 `os.Exit()`，在其它函数体中不应该调用 `os.Exit()`。
+应仅在 `main()` 函数体中根据实际需要调用 `os.Exit()`，在其他函数体中不应该调用 `os.Exit()`。
 
 ## runtime.Goexit() 对 recover 的影响
 
 [func Goexit()](https://pkg.go.dev/runtime#Goexit) 的主要用途是让当前协程“体面地”提前退出，同时确保 defer 中的清理逻辑被执行，但 defer 中的 `recover()` 返回 `nil`，因为 Goexit 不是 panic。
 
-当 `main()` 函数返回时，整个程序就结束了。如果在 `main()` 函数中启动了一个后台协程，但 `main()` 自己没什么事可做了，直接 return 会立刻杀掉后台协程。一种常见的做法是在 `main()` 中调用 `runtime.Goexit()`，这样 `main` 协程会终止，但 `main()` 函数不返回，不会触发程序退出，程序会继续运行其它协程。
+当 `main()` 函数返回时，整个程序就结束了。如果在 `main()` 函数中启动了一个后台协程，但 `main()` 自己没什么事可做了，直接 return 会立刻杀掉后台协程。一种常见的做法是在 `main()` 中调用 `runtime.Goexit()`，这样 `main` 协程会终止，但 `main()` 函数不返回，不会触发程序退出，程序会继续运行其他协程。
 
 ```go
 func main() {
