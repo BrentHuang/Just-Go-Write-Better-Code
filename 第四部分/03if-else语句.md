@@ -73,7 +73,7 @@ if err := doSomething(); err != nil {
 }
 ```
 
-映射取值检查：
+映射取值检查（映射类型见第五部分）：
 
 ```go
 if val, ok := m["key"]; ok {
@@ -81,10 +81,12 @@ if val, ok := m["key"]; ok {
 }
 ```
 
-类型断言（Type Assertion）：
+类型断言（Type Assertion，详见第七部分）：
 
 ```go
 if s, ok := val.(string); ok {
  fmt.Printf("val 是字符串：%s\n", s)
 }
 ```
+
+

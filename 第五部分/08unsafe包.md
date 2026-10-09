@@ -237,7 +237,7 @@ type Optimize struct {
 3. 可以在一条表达式中完成 `unsafe.Pointer` -> `uintptr` -> 加减偏移量 -> `unsafe.Pointer` 的完整转换，但算术运算的结果不能超出原分配对象的边界
 4. 调用 `syscall.Syscall` 等系统调用时，可以将 `unsafe.Pointer` 转换为 `uintptr` 直接作为参数传递，编译器会保证在此期间原指针指向的对象不被回收
 5. `reflect.Value.Pointer` 和 `reflect.Value.UnsafeAddr` 返回的 `uintptr` 可立即转换为 `unsafe.Pointer`
-6. `reflect.SliceHeader` 和 `reflect.StringHeader` 的 `Data` 字段可与 `unsafe.Pointer` 互转（注意：这两个类型自 Go 1.20 起已废弃，推荐使用 `unsafe.Slice`/`unsafe.SliceData` 或 `unsafe.String`/`unsafe.StringData`）
+6. `reflect.SliceHeader` 和 `reflect.StringHeader` 的 `Data` 字段可与 `unsafe.Pointer` 互转（注意：这两个类型自 Go 1.21 起已废弃，推荐使用 `unsafe.Slice`/`unsafe.SliceData` 或 `unsafe.String`/`unsafe.StringData`）
 
 `unsafe.Pointer` 转换本质上是重新解释同一块内存。
 

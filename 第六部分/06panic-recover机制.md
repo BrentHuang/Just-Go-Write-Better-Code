@@ -66,6 +66,22 @@ func main() {
 
 注意：某些致命错误会导致 Go 运行时终止程序，如栈溢出、内存耗尽等，这些是 fatal error 而非普通 panic，`recover()` 也捕获不到，程序必然崩溃。
 
+### panic(nil)
+
+自 Go 1.21 起，语言规范保证：如果协程正在 panic 且 `recover()` 由被 defer 的函数直接调用，那么 `recover()` 的返回值一定不为 `nil`。为实现这一点，以 `nil` 接口值（或无类型 `nil`）调用 `panic()` 会改为引发一个 `*runtime.PanicNilError` 类型的运行时 panic，`recover()` 返回的是这个错误值而非 `nil`：
+
+```go
+func main() {
+ defer func() {
+  r := recover()
+  fmt.Printf("recovered: %v (type %T)\n", r, r)
+  // recovered: runtime error: panic called with nil argument (type *runtime.PanicNilError)
+ }()
+ panic(nil)
+}
+```
+
+
 ## panic 的传播与覆盖
 
 对于发生 `panic` 的函数，`panic` 发生点之后的代码不会继续执行，控制权会返回到它的调用方。如果函数 `f()` 中发生的 `panic` 向上传播给它的调用者 `g()`，`g()` 的某个 `defer` 中的 `recover()` 捕获了这个 `panic`，`g()` 中位于 `f()` 调用之后的代码也不会继续执行，因为在 `g()` 看来，调用 `f()` 的地方就是 `panic` 发生点。

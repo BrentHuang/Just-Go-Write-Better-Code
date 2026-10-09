@@ -471,7 +471,9 @@ func main() {
 
 [func Goexit()](https://pkg.go.dev/runtime#Goexit) 的主要用途是让当前协程“体面地”提前退出，同时确保 defer 中的清理逻辑被执行，但 defer 中的 `recover()` 返回 `nil`，因为 Goexit 不是 panic。
 
-当 `main()` 函数返回时，整个程序就结束了。如果在 `main()` 函数中启动了一个后台协程，但 `main()` 自己没什么事可做了，直接 return 会立刻杀掉后台协程。一种常见的做法是在 `main()` 中调用 `runtime.Goexit()`，这样 `main` 协程会终止，但 `main()` 函数不返回，不会触发程序退出，程序会继续运行其他协程。
+调用 `runtime.Goexit()` 会终止当前协程并执行其调用栈上所有被 defer 的函数体，`main` 协程也不例外：在 `main()` 中调用 `runtime.Goexit()`，会执行 defer 列表后终止 `main` 协程，而程序只要还有其他协程在运行就不会退出。
+
+需要注意的是，这不是一种让程序持续运行的可靠手段：一旦其他协程全部结束，已经终止的 `main` 协程无法再被唤醒，程序会以 `fatal error: no goroutines (main called runtime.Goexit) - deadlock!` 崩溃退出。等待后台协程应使用 `sync.WaitGroup` 等同步原语。
 
 ```go
 func main() {
@@ -485,6 +487,7 @@ func main() {
  runtime.Goexit() // main 协程退出，但后台协程继续运行
 }
 ```
+
 
 在函数中途强制结束当前协程，但确保所有 defer 语句被执行。这跟 return 的区别在于，return 只能从当前函数返回，而 Goexit() 会直接终止整个协程，但依然会执行调用栈上所有被 defer 的函数体。
 
