@@ -88,5 +88,3 @@ if s, ok := val.(string); ok {
  fmt.Printf("val 是字符串：%s\n", s)
 }
 ```
-
-

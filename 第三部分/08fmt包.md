@@ -24,7 +24,7 @@
 - 从指定的 `io.Reader` 或字符串读取，对应 `Fscan` 和 `Sscan` 系列：
   - [func Fscan(r io.Reader, a ...any) (n int, err error)](https://pkg.go.dev/fmt#Fscan) / [Fscanf](https://pkg.go.dev/fmt#Fscanf) / [Fscanln](https://pkg.go.dev/fmt#Fscanln)
   - [func Sscan(str string, a ...any) (n int, err error)](https://pkg.go.dev/fmt#Sscan) / [Sscanf](https://pkg.go.dev/fmt#Sscanf) / [Sscanln](https://pkg.go.dev/fmt#Sscanln)
-- 将格式化结果追加到字节切片（Go 1.19+），函数名以 `Append` 开头。与 `Sprint` 系列不同，`Append` 系列不会创建新切片，而是将结果追加到传入的切片之后并返回更新后的切片，适合高性能、需要复用缓冲区（如 `[]byte` 池）的场景：
+- 将格式化结果追加到字节切片（Go 1.19 引入），函数名以 `Append` 开头。与 `Sprint` 系列不同，`Append` 系列不会创建新切片，而是将结果追加到传入的切片之后并返回更新后的切片，适合高性能、需要复用缓冲区（如 `[]byte` 池）的场景：
   - [func Append(b []byte, a ...any) []byte](https://pkg.go.dev/fmt#Append)
   - [func Appendf(b []byte, format string, a ...any) []byte](https://pkg.go.dev/fmt#Appendf)
   - [func Appendln(b []byte, a ...any) []byte](https://pkg.go.dev/fmt#Appendln)
